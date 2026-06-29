@@ -3,11 +3,11 @@ name: CI
 on:
   push:
     branches:
-      - version-16
+      - MedVisitPro
   pull_request:
 
 concurrency:
-  group: version-16-medvisitpro-${{ github.event.number }}
+  group: MedVisitPro-medvisitpro-${{ github.event.number }}
   cancel-in-progress: true
 
 jobs:

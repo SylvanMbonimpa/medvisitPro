@@ -1,6 +1,6 @@
-### Medvisitpro
+### MedVisitPro
 
-Track client site visit
+This app is for Surgipharm Pharmacy which allow Agent visiting their customers and explain about the new product. theapp track physical location of a delegate while filling the form
 
 ### Installation
 
@@ -8,7 +8,7 @@ You can install this app using the [bench](https://github.com/frappe/bench) CLI:
 
 ```bash
 cd $PATH_TO_YOUR_BENCH
-bench get-app $URL_OF_THIS_REPO --branch version-16
+bench get-app $URL_OF_THIS_REPO --branch MedVisitPro
 bench install-app medvisitpro
 ```
 

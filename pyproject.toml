@@ -1,9 +1,9 @@
 [project]
 name = "medvisitpro"
 authors = [
-    { name = "sylvain", email = "mbonimpasylvain@gmail.com"}
+    { name = "Sylvain", email = "mbonimpasylvain@gmail.com"}
 ]
-description = "Track client site visit"
+description = "This app is for Surgipharm Pharmacy which allow Agent visiting their customers and explain about the new product. theapp track physical location of a delegate while filling the form"
 requires-python = ">=3.14"
 readme = "README.md"
 dynamic = ["version"]

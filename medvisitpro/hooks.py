@@ -1,7 +1,7 @@
 app_name = "medvisitpro"
-app_title = "Medvisitpro"
-app_publisher = "sylvain"
-app_description = "Track client site visit"
+app_title = "MedVisitPro"
+app_publisher = "Sylvain"
+app_description = "This app is for Surgipharm Pharmacy which allow Agent visiting their customers and explain about the new product. theapp track physical location of a delegate while filling the form"
 app_email = "mbonimpasylvain@gmail.com"
 app_license = "mit"
 
@@ -15,7 +15,7 @@ app_license = "mit"
 # 	{
 # 		"name": "medvisitpro",
 # 		"logo": "/assets/medvisitpro/logo.png",
-# 		"title": "Medvisitpro",
+# 		"title": "MedVisitPro",
 # 		"route": "/medvisitpro",
 # 		"has_permission": "medvisitpro.api.permission.has_app_permission"
 # 	}

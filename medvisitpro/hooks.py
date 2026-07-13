@@ -5,6 +5,14 @@ app_description = "This is for Surgipharm"
 app_email = "mbonimpasylvain@gmail.com"
 app_license = "mit"
 
+fixtures = [
+    "Custom Field",
+    "Property Setter",
+    "Workspace",
+    "Client Script",
+    "Server Script",
+]
+
 # Apps
 # ------------------
 

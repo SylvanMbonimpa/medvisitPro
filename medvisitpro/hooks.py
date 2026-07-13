@@ -13,6 +13,8 @@ fixtures = [
     "Server Script",
 ]
 
+app_include_js = "/assets/medvisitpro/js/medvisitpro.js"
+
 # Apps
 # ------------------
 

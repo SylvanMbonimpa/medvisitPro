@@ -53,4 +53,7 @@ jspm_packages/
 
 # Aider AI Chat
 .aider*
+<<<<<<< HEAD
 SylvanKey.pub
+=======
+>>>>>>> 01cc2d76173e88811d5df123f1bb8cf108643ffb

@@ -1,9 +1,15 @@
 [project]
 name = "medvisitpro"
 authors = [
+<<<<<<< HEAD
     { name = "Karame Techies", email = "mbonimpasylvain@gmail.com"}
 ]
 description = "This is for Surgipharm"
+=======
+    { name = "Sylvain", email = "mbonimpasylvain@gmail.com"}
+]
+description = "This app is for Surgipharm Pharmacy which allow Agent visiting their customers and explain about the new product. theapp track physical location of a delegate while filling the form"
+>>>>>>> 01cc2d76173e88811d5df123f1bb8cf108643ffb
 requires-python = ">=3.14"
 readme = "README.md"
 dynamic = ["version"]

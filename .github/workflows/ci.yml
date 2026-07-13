@@ -3,11 +3,19 @@ name: CI
 on:
   push:
     branches:
+<<<<<<< HEAD
       - MedvisitPr
   pull_request:
 
 concurrency:
   group: MedvisitPr-medvisitpro-${{ github.event.number }}
+=======
+      - MedVisitPro
+  pull_request:
+
+concurrency:
+  group: MedVisitPro-medvisitpro-${{ github.event.number }}
+>>>>>>> 01cc2d76173e88811d5df123f1bb8cf108643ffb
   cancel-in-progress: true
 
 jobs:

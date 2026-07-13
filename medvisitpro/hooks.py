@@ -1,4 +1,5 @@
 app_name = "medvisitpro"
+<<<<<<< HEAD
 app_title = "Medical Visit Software"
 app_publisher = "Karame Techies"
 app_description = "This is for Surgipharm"
@@ -12,10 +13,19 @@ fixtures = [
     "Client Script",
     "Server Script",
 ]
+=======
+app_title = "MedVisitPro"
+app_publisher = "Sylvain"
+app_description = "This app is for Surgipharm Pharmacy which allow Agent visiting their customers and explain about the new product. theapp track physical location of a delegate while filling the form"
+app_email = "mbonimpasylvain@gmail.com"
+app_license = "mit"
+
+>>>>>>> 01cc2d76173e88811d5df123f1bb8cf108643ffb
 
 # Apps
 # ------------------
 
+<<<<<<< HEAD
 # required_apps = []
 
 # Each item in the list will be shown as an app in the apps page
@@ -24,6 +34,16 @@ fixtures = [
 # 		"name": "medvisitpro",
 # 		"logo": "/assets/medvisitpro/logo.png",
 # 		"title": "Medical Visit Software",
+=======
+# # required_apps = []
+
+# # Each item in the list will be shown as an app in the apps page
+# # add_to_apps_screen = [
+# 	{
+# 		"name": "medvisitpro",
+# 		"logo": "/assets/medvisitpro/logo.png",
+# 		"title": "MedVisitPro",
+>>>>>>> 01cc2d76173e88811d5df123f1bb8cf108643ffb
 # 		"route": "/medvisitpro",
 # 		"has_permission": "medvisitpro.api.permission.has_app_permission"
 # 	}

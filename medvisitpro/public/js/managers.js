@@ -851,12 +851,19 @@
       }),
     },
     { key: "manager_name", label: "Manager", default: true, get: (r) => r.manager_name || "—" },
-    // No brands = unscoped (sees every brand) — see manager_sees_all_brands.
+    // Only a Regional Manager is unscoped with zero brands — see
+    // manager_sees_all_brands (utils.py). A Delegate Manager with none
+    // is a setup gap (they can't have delegates until they have at
+    // least one — create_delegate/reassign_delegate refuse it), so
+    // it's flagged rather than read as "sees everything".
     {
       key: "brands", label: "Brands", default: true,
-      get: (r) => (r.brands && r.brands.length
-        ? r.brands.join(", ")
-        : { html: '<span class="text-on-surface-variant">All brands</span>' }),
+      get: (r) => {
+        if (r.brands && r.brands.length) return r.brands.join(", ");
+        if (r.role === "Regional Manager") return { html: '<span class="text-on-surface-variant">All brands</span>' };
+        if (r.role === "Delegate Manager") return { html: '<span class="text-error">No brands assigned</span>' };
+        return "—";
+      },
     },
     { key: "mobile_no", label: "Phone", default: true, get: (r) => r.mobile_no || "—" },
     { key: "territory", label: "Territory", default: true, get: (r) => r.territory || "—" },
@@ -1401,8 +1408,7 @@
             (window.IS_REGIONAL_MANAGER && r.role === "Delegate"
               ? `<button type="button" class="reassign-delegate-btn text-primary hover:underline font-label-md mr-sm" data-no-row-click data-delegate="${escapeHtml(r.name)}" data-name="${escapeHtml(r.full_name)}" data-manager="${escapeHtml(r.manager || "")}">Reassign</button>`
               : "") +
-            `<button type="button" class="delete-delegate-btn text-error hover:underline font-label-md" data-no-row-click data-delegate="${escapeHtml(r.name)}" data-name="${escapeHtml(r.full_name)}">Delete</button>` +
-            `<button type="button" class="view-delegate-doctors-btn text-primary hover:underline font-label-md ml-sm" data-no-row-click data-delegate="${escapeHtml(r.name)}">Points of Contact</button>`,
+            `<button type="button" class="delete-delegate-btn text-error hover:underline font-label-md" data-no-row-click data-delegate="${escapeHtml(r.name)}" data-name="${escapeHtml(r.full_name)}">Delete</button>`,
         },
       ]);
     } else if (viewAtRequestTime === "products") {
@@ -3533,18 +3539,6 @@
     document.getElementById("assignResponsibleClientsSearch").addEventListener("input", () => {
       clearTimeout(responsibleClientsSearchTimer);
       responsibleClientsSearchTimer = setTimeout(loadAssignResponsibleClientsCandidates, 300);
-    });
-    // "Points of Contact" on a Delegates-table row opens that
-    // delegate's portfolio (their assigned clients'
-    // points of contact); on a Clients-table row it opens that
-    // organization's own detail modal, whose Points of Contact
-    // section is the same list. Delegated since rows are rebuilt on
-    // every render (search, pagination) and a per-row listener would
-    // need rewiring each time. Editing a delegate/client is still one
-    // click away via the row itself (handleRowClick).
-    document.addEventListener("click", (e) => {
-      const delegateBtn = e.target.closest(".view-delegate-doctors-btn");
-      if (delegateBtn) openDelegatePortfolio(delegateBtn.dataset.delegate);
     });
     // Delete, on the Delegates table — delete_delegate (api.py)
     // refuses when there's real history on file (visits, assignments,

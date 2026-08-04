@@ -1,0 +1,155 @@
+/**
+ * Input for `npm run build:css`. The compiled result is written to
+ * medvisitpro/public/css/medvisitpro.css, which Frappe serves at
+ * /assets/medvisitpro/css/medvisitpro.css.
+ *
+ * Everything the pages used to pull from a third-party CDN at runtime
+ * — the Tailwind compiler, Inter, and the Material Symbols icon font —
+ * is resolved here at build time instead.
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+ * Fonts (self-hosted)
+ * ============================================================
+ * Downloaded from Google Fonts into public/fonts/ rather than linked,
+ * so a page load costs no DNS lookup, TLS handshake and round-trip to
+ * fonts.googleapis.com + fonts.gstatic.com. That matters most for the
+ * delegates, who open these pages on mobile data in the field.
+ *
+ * To refresh a font, re-download the woff2 and drop it in place — the
+ * filenames here are stable.
+ */
+
+/* IBM Plex Sans, variable weight 100..700. Replaced Inter: Plex has
+ * letterforms of its own rather than reading as a browser default, it
+ * was drawn for dense technical/enterprise UI, and it carries proper
+ * tabular figures for the dashboard's counters and tables.
+ *
+ * 700 is the top of Plex's range and also the heaviest weight this app
+ * asks for (`font-bold`; the type scale tops out at 600), so nothing is
+ * synthesised. Don't introduce font-extrabold/font-black without
+ * checking — the browser would fake them by smearing the outlines.
+ *
+ * Split latin / latin-ext exactly as Google serves it: the browser only
+ * fetches latin-ext if a character in that range appears, so ordinary
+ * English pages pay for the 45KB latin file alone. Cyrillic, Greek and
+ * Vietnamese subsets are deliberately not shipped — nothing in this
+ * deployment needs them, and latin-ext already covers French accents
+ * and Kinyarwanda. */
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 100 700;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/assets/medvisitpro/fonts/ibm-plex-sans-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 100 700;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/assets/medvisitpro/fonts/ibm-plex-sans-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* Material Symbols, subset to only the icons this app renders (see the
+ * icon_names parameter of the Google Fonts API). The full Outlined face
+ * carries thousands of glyphs at ~300KB; the 41 we use come to ~5KB.
+ *
+ * IMPORTANT: adding a new <span class="material-symbols-outlined"> to a
+ * template or JS file will render as its literal ligature text (e.g.
+ * "delete") until the subset is regenerated to include it. Re-fetch with
+ * the new name appended to icon_names — see styles/README.md.
+ *
+ * font-display is `block`, not `swap`: an icon font falling back to a
+ * system face shows the raw ligature word mid-layout, which reads as a
+ * broken page. Better to hold the space blank for the ~5KB it takes. */
+@font-face {
+  font-family: "Material Symbols Outlined";
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url("/assets/medvisitpro/fonts/material-symbols-subset-2.woff2") format("woff2");
+}
+
+@layer base {
+  body {
+    @apply bg-background text-on-surface;
+    font-family: theme("fontFamily.sans");
+  }
+
+  /* Figures line up in columns instead of jittering as values change —
+   * the manager dashboard's stat tiles, analytics totals and history
+   * tables all re-render numbers in place. */
+  table,
+  .tabular-figures {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+}
+
+@layer components {
+  /* Was duplicated in an inline <style> on both dashboard pages. */
+  .material-symbols-outlined {
+    font-family: "Material Symbols Outlined";
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    vertical-align: middle;
+    font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+    -webkit-font-feature-settings: "liga";
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .ambient-shadow {
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+  }
+
+  .modal-overlay {
+    background: rgba(15, 23, 42, 0.5);
+  }
+
+  /* Manager sidebar collapse (icons-only) — toggled by
+   * MedvisitPro.initSidebarCollapse in common.js via a class on
+   * #managerSidebar, not by swapping individual Tailwind utilities,
+   * so the width change can transition smoothly and every "hide the
+   * label" rule lives in one place instead of a class list per
+   * element. ID + class beats the plain-class w-64 utility already on
+   * the element, so this overrides it without !important. */
+  #managerSidebar {
+    transition: width 0.15s ease;
+  }
+  #managerSidebar.sidebar-collapsed {
+    width: 4.5rem;
+  }
+  #managerSidebar.sidebar-collapsed .sidebar-label {
+    display: none;
+  }
+  #managerSidebar.sidebar-collapsed .nav-item,
+  #managerSidebar.sidebar-collapsed a.flex,
+  #managerSidebar.sidebar-collapsed button.flex {
+    justify-content: center;
+  }
+  #managerSidebar.sidebar-collapsed #sidebarToggleIcon {
+    transform: rotate(180deg);
+  }
+}

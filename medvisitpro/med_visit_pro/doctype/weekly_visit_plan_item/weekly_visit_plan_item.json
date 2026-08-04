@@ -1,0 +1,92 @@
+{
+ "doctype": "DocType",
+ "name": "Weekly Visit Plan Item",
+ "module": "Med Visit Pro",
+ "custom": 0,
+ "istable": 1,
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "fields": [
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer",
+   "reqd": 1,
+   "in_list_view": 1,
+   "columns": 3
+  },
+  {
+   "fieldname": "contact_person",
+   "fieldtype": "Link",
+   "label": "Point of Contact",
+   "options": "Contact",
+   "in_list_view": 1,
+   "columns": 2,
+   "description": "Who the delegate intends to see — a doctor, a pharmacist, whoever this client's business goes through. Optional: a client with nobody on file is still plannable."
+  },
+  {
+   "fieldname": "scheduled_date",
+   "fieldtype": "Date",
+   "label": "Scheduled Date",
+   "reqd": 1,
+   "in_list_view": 1,
+   "columns": 2
+  },
+  {
+   "fieldname": "scheduled_time",
+   "fieldtype": "Time",
+   "label": "Scheduled Time",
+   "in_list_view": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "visit_type",
+   "fieldtype": "Select",
+   "label": "Visit Type",
+   "options": "Scheduled\nAd-hoc",
+   "default": "Scheduled",
+   "read_only": 1,
+   "in_list_view": 1,
+   "columns": 1,
+   "description": "Scheduled = planned ahead as part of the week. Ad-hoc = raised by the delegate mid-week for a client the plan didn't cover; it still needs approval before they can check in."
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Small Text",
+   "label": "Reason",
+   "description": "Why this unplanned client needs visiting. Required on Ad-hoc lines — it is the whole basis the manager approves on."
+  },
+  {
+   "fieldname": "approval_status",
+   "fieldtype": "Select",
+   "label": "Approval Status",
+   "options": "Pending\nApproved\nRejected",
+   "default": "Pending",
+   "read_only": 1,
+   "in_list_view": 1,
+   "columns": 2,
+   "description": "Set by the Delegate Manager during review. A line stays Pending until it is individually decided or swept up by a whole-plan approval."
+  },
+  {
+   "fieldname": "manager_comment",
+   "fieldtype": "Small Text",
+   "label": "Manager Comment",
+   "read_only": 1,
+   "in_list_view": 1,
+   "columns": 3,
+   "description": "Why this particular line was rejected. Shown back to the delegate so they know what to fix before resubmitting."
+  },
+  {
+   "fieldname": "visit_assignment",
+   "fieldtype": "Link",
+   "label": "Visit Assignment",
+   "options": "Visit Assignment",
+   "read_only": 1,
+   "description": "The live Visit Assignment this line produced once approved. Empty until then — an unapproved plan line is not a visit the delegate can act on."
+  }
+ ],
+ "permissions": []
+}

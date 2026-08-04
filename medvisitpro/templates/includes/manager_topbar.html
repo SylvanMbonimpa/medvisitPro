@@ -1,0 +1,55 @@
+{#
+  Top app bar for the manager pages. Sits inside the content column, to
+  the right of the sidebar, so it stays sticky to the top of that column
+  rather than spanning the whole viewport — which is what keeps the
+  centred shell looking like one panel instead of a bar floating over it.
+
+  Callers set `nav_mode`; see manager_sidebar.html.
+#}
+{%- set nav_mode = nav_mode or "link" -%}
+
+<header class="sticky top-0 z-40 h-16 shrink-0 bg-surface-bright border-b border-outline-variant flex items-center gap-sm px-margin-mobile md:px-margin-desktop">
+  <a href="/managers" class="md:hidden font-headline-sm text-headline-sm text-primary">MedvisitPro</a>
+
+  {%- if nav_mode == "spa" %}
+  {# Filters the dashboard's visit table; see initGlobalSearch in managers.js. #}
+  <div class="relative flex-1 max-w-md hidden sm:block">
+    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]">search</span>
+    <input type="search" id="globalSearch" placeholder="Search this week's visits…"
+      class="w-full bg-surface-container-low border border-transparent rounded-btn pl-10 pr-sm py-2 font-body-sm text-body-sm outline-none transition-colors focus:bg-surface-container-lowest focus:border-primary focus:ring-0">
+  </div>
+  {%- endif %}
+
+  <div class="ml-auto flex items-center gap-1">
+    <a href="/managers?view=approvals" id="notificationsBtn" aria-label="Pending approvals"
+      class="relative p-2 rounded-full text-on-surface-variant hover:bg-surface-container transition-colors">
+      <span class="material-symbols-outlined">notifications</span>
+      <span class="approvals-badge hidden absolute top-0.5 right-0.5 min-w-[18px] px-1 rounded-full bg-error text-on-error font-label-sm text-label-sm text-center"></span>
+    </a>
+
+    <div class="relative">
+      <button type="button" id="profileTrigger" aria-haspopup="true" aria-expanded="false"
+        class="flex items-center gap-sm pl-sm pr-1 py-1 rounded-full hover:bg-surface-container transition-colors">
+        <div class="text-right hidden lg:block">
+          <p class="font-label-lg text-label-lg text-on-surface leading-tight" id="managerNameLabel"></p>
+          <p class="font-label-sm text-label-sm text-on-surface-variant">{{ manager_role_label }}</p>
+        </div>
+        <div id="managerAvatarContainer" class="w-9 h-9 rounded-full bg-primary text-on-primary flex items-center justify-center font-label-lg overflow-hidden"></div>
+        <span class="material-symbols-outlined text-on-surface-variant text-[20px]">expand_more</span>
+      </button>
+
+      <div id="profileMenu" class="hidden absolute right-0 mt-2 w-64 bg-surface-container-lowest border border-outline-variant rounded-card shadow-lg overflow-hidden z-50">
+        <div class="px-md py-md border-b border-outline-variant">
+          <p class="font-label-lg text-label-lg text-on-surface leading-tight" id="profileMenuName"></p>
+          <p class="font-body-sm text-body-sm text-on-surface-variant break-all" id="profileMenuEmail"></p>
+          <span class="inline-block mt-xs px-sm py-0.5 rounded-full bg-primary-container text-on-primary font-label-sm text-label-sm">{{ manager_role_label }}</span>
+        </div>
+        <button type="button" data-action="logout"
+          class="w-full flex items-center gap-sm px-md py-sm text-left text-on-surface hover:bg-surface-container transition-colors">
+          <span class="material-symbols-outlined text-[20px]">logout</span>
+          <span class="font-label-lg text-label-lg">Log out</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</header>

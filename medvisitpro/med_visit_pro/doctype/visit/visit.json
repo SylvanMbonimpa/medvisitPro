@@ -1,0 +1,167 @@
+{
+ "doctype": "DocType",
+ "name": "Visit",
+ "module": "Med Visit Pro",
+ "custom": 0,
+ "istable": 0,
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "autoname": "format:VST-{#####}",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "fields": [
+  {
+   "fieldname": "visit_assignment",
+   "fieldtype": "Link",
+   "label": "Visit Assignment",
+   "options": "Visit Assignment",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "delegate",
+   "fieldtype": "Link",
+   "label": "Delegate",
+   "options": "User",
+   "reqd": 1,
+   "read_only": 1,
+   "default": "__user",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "contact_person",
+   "fieldtype": "Link",
+   "label": "Point of Contact",
+   "options": "Contact",
+   "description": "Who was actually seen on this visit. Defaults to whoever the assignment named, but the delegate can correct it at check-in — the planned person isn't always the one available."
+  },
+  {
+   "fieldname": "section_break_location",
+   "fieldtype": "Section Break",
+   "label": "Location Verification"
+  },
+  {
+   "fieldname": "checkin_latitude",
+   "fieldtype": "Data",
+   "label": "Check-in Latitude",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_location",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "checkin_longitude",
+   "fieldtype": "Data",
+   "label": "Check-in Longitude",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "checkin_accuracy",
+   "fieldtype": "Float",
+   "label": "Check-in Accuracy (meters)",
+   "read_only": 1,
+   "description": "GPS accuracy radius reported by the device. Blank for network-based (IP) location, which has no meaningful accuracy figure."
+  },
+  {
+   "fieldname": "checkin_location_source",
+   "fieldtype": "Select",
+   "label": "Check-in Location Source",
+   "options": "GPS\nGPS (Unverified Accuracy)\nNetwork (Approximate)",
+   "read_only": 1,
+   "in_list_view": 1,
+   "description": "GPS (Unverified Accuracy) means the device didn't report a usable accuracy figure — often a laptop/desktop with no GPS hardware silently using Wi-Fi/IP positioning. Network (Approximate) is resolved from the delegate's IP address. Both can be off by kilometers."
+  },
+  {
+   "fieldname": "checkin_time",
+   "fieldtype": "Datetime",
+   "label": "Check-in Time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "checkin_location",
+   "fieldtype": "Geolocation",
+   "label": "Check-in Location",
+   "read_only": 1,
+   "description": "Auto-generated from the coordinates above. Renders as an interactive map."
+  },
+  {
+   "fieldname": "checkin_address",
+   "fieldtype": "Data",
+   "label": "Check-in Address",
+   "read_only": 1,
+   "description": "Human-readable address resolved from coordinates via reverse geocoding at save time."
+  },
+  {
+   "fieldname": "section_break_details",
+   "fieldtype": "Section Break",
+   "label": "Visit Details"
+  },
+  {
+   "fieldname": "discussion_notes",
+   "fieldtype": "Text",
+   "label": "Discussion Notes"
+  },
+  {
+   "fieldname": "products_discussed",
+   "fieldtype": "Table",
+   "label": "Products Discussed",
+   "options": "Visit Product"
+  },
+  {
+   "fieldname": "outcome",
+   "fieldtype": "Select",
+   "label": "Outcome",
+   "options": "Interested\nNot Interested\nFollow-up Needed",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "sales_order",
+   "fieldtype": "Link",
+   "label": "Sales Order",
+   "options": "Sales Order",
+   "read_only": 1,
+   "description": "Linked automatically if an order was created from this visit."
+  },
+  {
+   "fieldname": "visit_type",
+   "fieldtype": "Select",
+   "label": "Visit Type",
+   "options": "Scheduled\nAd-hoc",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "description": "Copied automatically from the linked Visit Assignment. Kept here too so weekly reports can filter without a join."
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1, "write": 1, "create": 1, "delete": 1,
+   "report": 1, "export": 1, "print": 1, "email": 1
+  },
+  {
+   "role": "Delegate Manager",
+   "read": 1, "report": 1, "export": 1, "print": 1
+  },
+  {
+   "role": "Delegate",
+   "read": 1, "write": 1, "create": 1,
+   "report": 1
+  }
+ ]
+}

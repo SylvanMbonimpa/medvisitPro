@@ -1,0 +1,90 @@
+{#
+  Desktop navigation rail for the manager pages.
+
+  Sticky rather than fixed: the whole app shell is centred inside a
+  max-width container, and a fixed element is positioned against the
+  viewport, not that container — it would stay welded to the left edge
+  of the screen while the content sat in the middle. `self-start` keeps
+  it from being stretched by the flex parent so `sticky` has room to
+  work.
+
+  Callers set:
+    active_nav  the nav key to highlight ("dashboard", "reports", ...)
+    nav_mode    "spa"  — managers.html, which swaps panes in place, so
+                         its own views stay <button data-view> and are
+                         wired by managers.js
+                "link" — any other page, where every item is an <a> back
+                         to the relevant managers.html view
+#}
+{%- set nav_mode = nav_mode or "link" -%}
+{%- set nav_items = [
+  ("dashboard", "dashboard",   "Dashboard",     "/managers"),
+  ("approvals", "fact_check",  "Approvals",     "/managers?view=approvals"),
+  ("clients",   "group",       "Clients",       "/managers?view=clients"),
+  ("delegates", "badge",       "Delegates",     "/managers?view=delegates"),
+  ("history",   "history",     "Visit History", "/managers?view=history"),
+  ("products",  "inventory_2", "Products",      "/managers?view=products"),
+  ("reports",   "assessment",  "Reports",       "/report")
+] -%}
+{%- set base = "w-full flex items-center gap-sm px-sm py-2.5 rounded-btn font-label-lg text-label-lg transition-colors text-left" -%}
+{%- set idle = "text-on-surface-variant hover:bg-surface-container" -%}
+{%- set on = "bg-primary-container text-on-primary" -%}
+
+<aside id="managerSidebar" class="hidden md:flex md:flex-col sticky top-0 self-start h-screen w-64 shrink-0 bg-surface-container-lowest border-r border-outline-variant z-30">
+  <div class="flex flex-col h-full py-md px-sm">
+
+    <div class="flex items-center gap-xs mb-lg px-sm">
+      <a href="/managers" class="sidebar-label min-w-0 flex-1">
+        <h1 class="font-headline-md text-headline-md text-primary truncate">MedvisitPro</h1>
+        <p class="font-label-sm text-label-sm text-on-surface-variant">Field Management</p>
+      </a>
+      <!-- Collapses the whole rail to icons-only — see
+           MedvisitPro.initSidebarCollapse in common.js. State persists
+           across pages (managers.html <-> report.html) via
+           localStorage, since this include is shared between them. -->
+      <button type="button" id="sidebarToggleBtn" aria-label="Collapse sidebar" title="Collapse sidebar"
+        class="shrink-0 p-1.5 rounded-btn text-on-surface-variant hover:bg-surface-container hover:text-primary transition-colors">
+        <span class="material-symbols-outlined text-[20px]" id="sidebarToggleIcon">chevron_left</span>
+      </button>
+    </div>
+
+    <nav class="flex-1 space-y-1 overflow-y-auto">
+      {%- for key, icon, label, href in nav_items %}
+        {#- Reports is always a real navigation: it is its own page, not
+            a pane of the dashboard. -#}
+        {%- if nav_mode == "spa" and key != "reports" %}
+      <button type="button" data-view="{{ key }}" class="nav-item {{ base }} {{ idle }}" title="{{ label }}">
+        <span class="material-symbols-outlined text-[20px]">{{ icon }}</span>
+        <span class="sidebar-label">{{ label }}</span>
+        {%- if key == "approvals" %}
+        <span class="approvals-badge hidden ml-auto min-w-[20px] px-1.5 py-0.5 rounded-full bg-error text-on-error font-label-sm text-label-sm text-center"></span>
+        {%- endif %}
+      </button>
+        {%- else %}
+      <a href="{{ href }}" class="{{ base }} {{ on if active_nav == key else idle }}" title="{{ label }}">
+        <span class="material-symbols-outlined text-[20px]">{{ icon }}</span>
+        <span class="sidebar-label">{{ label }}</span>
+        {%- if key == "approvals" %}
+        <span class="approvals-badge hidden ml-auto min-w-[20px] px-1.5 py-0.5 rounded-full bg-error text-on-error font-label-sm text-label-sm text-center"></span>
+        {%- endif %}
+      </a>
+        {%- endif %}
+      {%- endfor %}
+    </nav>
+
+    {%- if nav_mode == "spa" %}
+    {# The create actions open modals that only exist on managers.html. #}
+    <div class="mt-auto pt-sm border-t border-outline-variant space-y-1">
+      <p class="sidebar-label px-sm pb-1 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Quick actions</p>
+      <button type="button" id="openAddClientBtn" class="{{ base }} {{ idle }}" title="Add Client">
+        <span class="material-symbols-outlined text-[20px]">person_add</span>
+        <span class="sidebar-label">Add Client</span>
+      </button>
+      <button type="button" id="openAddDelegateBtn" class="{{ base }} {{ idle }}" title="Add Delegate">
+        <span class="material-symbols-outlined text-[20px]">group_add</span>
+        <span class="sidebar-label">Add Delegate</span>
+      </button>
+    </div>
+    {%- endif %}
+  </div>
+</aside>

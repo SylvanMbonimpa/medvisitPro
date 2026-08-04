@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>MedvisitPro | Delegate Dashboard</title>
+<link rel="preload" href="/assets/medvisitpro/fonts/ibm-plex-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/medvisitpro/fonts/material-symbols-subset-2.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/medvisitpro/css/medvisitpro.css?v={{ asset_version }}">
+</head>
+<body class="text-on-surface">
+
+<!-- Data handed off from the server render to delegate_visits.js -->
+<script id="page-data" type="application/json">
+{{ week_data | tojson }}
+</script>
+<script>
+  window.CSRF_TOKEN = "{{ csrf_token }}";
+  window.DELEGATE_NAME = "{{ delegate_name }}";
+  window.RELAX_LOCATION_GATE = "{{ 1 if relax_location_gate else 0 }}" === "1";
+</script>
+
+<nav class="bg-surface-container-lowest border-b border-outline-variant shadow-sm w-full h-16 sticky top-0 z-40">
+  <div class="flex justify-between items-center px-md w-full max-w-container-max mx-auto h-full">
+    <span class="font-headline-md text-headline-md text-primary font-bold tracking-tight">MedvisitPro</span>
+    <div class="flex items-center gap-md">
+      <div class="text-right hidden sm:block">
+        <p class="font-label-md text-label-md text-on-surface leading-tight" id="delegateNameLabel"></p>
+        <p class="font-label-sm text-label-sm text-on-surface-variant">Delegate</p>
+      </div>
+      <div class="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center font-label-md" id="delegateInitials"></div>
+      <span data-action="logout" class="material-symbols-outlined text-on-surface-variant hover:text-primary cursor-pointer transition-colors" title="Logout">logout</span>
+      <!-- <a href="/api/method/logout" class="material-symbols-outlined text-on-surface-variant hover:text-primary cursor-pointer transition-colors" title="Logout">logout</a> -->
+    </div>
+  </div>
+</nav>
+
+<main class="max-w-container-max mx-auto px-md py-lg flex flex-col md:flex-row gap-lg">
+
+  <aside class="w-full md:w-64 flex-shrink-0 space-y-md">
+    <div class="bg-surface-container-lowest rounded-xl p-md border border-outline-variant ambient-shadow">
+      <h3 class="font-label-md text-label-md text-primary mb-md flex items-center gap-xs">
+        <span class="material-symbols-outlined text-[20px]">calendar_today</span>
+        WEEKLY SCHEDULE
+      </h3>
+      <div class="space-y-xs" id="dayTabs"></div>
+    </div>
+    <div class="bg-surface-container-lowest rounded-xl p-md border border-outline-variant ambient-shadow">
+      <h3 class="font-label-md text-label-md text-primary mb-md flex items-center gap-xs">
+        <span class="material-symbols-outlined text-[20px]">fact_check</span>
+        WEEKLY PLAN
+      </h3>
+      <div class="mb-sm" id="planStatusChip"></div>
+      <p class="font-body-sm text-body-sm text-on-surface-variant mb-md" id="planStatusHint"></p>
+      <button type="button" class="w-full py-sm bg-primary text-on-primary rounded-lg font-label-md" id="openPlannerBtn">
+        Open Planner
+      </button>
+    </div>
+    <div class="bg-surface-container-lowest rounded-xl p-md border border-outline-variant ambient-shadow">
+      <h3 class="font-label-md text-label-md text-primary mb-md flex items-center gap-xs">
+        <span class="material-symbols-outlined text-[20px]">group</span>
+        MY CLIENTS
+      </h3>
+      <p class="font-body-sm text-body-sm text-on-surface-variant mb-md">Every organization you're responsible for, with who to see there.</p>
+      <button type="button" class="w-full py-sm border border-primary text-primary rounded-lg font-label-md" id="openMyClientsBtn">
+        View My Clients
+      </button>
+    </div>
+    <div class="bg-surface-container-lowest rounded-xl p-md border border-outline-variant ambient-shadow">
+      <h3 class="font-label-md text-label-md text-primary mb-md flex items-center gap-xs">
+        <span class="material-symbols-outlined text-[20px]">filter_list</span>
+        STATUS FILTER
+      </h3>
+      <div class="space-y-sm">
+        <label class="flex items-center gap-sm cursor-pointer group">
+          <input checked class="status-filter rounded border-outline-variant text-primary focus:ring-secondary" type="checkbox" data-status="Pending">
+          <span class="font-body-sm text-body-sm text-on-surface-variant group-hover:text-on-surface">Pending Visits</span>
+        </label>
+        <label class="flex items-center gap-sm cursor-pointer group">
+          <input checked class="status-filter rounded border-outline-variant text-primary focus:ring-secondary" type="checkbox" data-status="Completed">
+          <span class="font-body-sm text-body-sm text-on-surface-variant group-hover:text-on-surface">Completed</span>
+        </label>
+        <label class="flex items-center gap-sm cursor-pointer group">
+          <input checked class="status-filter rounded border-outline-variant text-primary focus:ring-secondary" type="checkbox" data-status="Missed">
+          <span class="font-body-sm text-body-sm text-on-surface-variant group-hover:text-on-surface">Missed</span>
+        </label>
+      </div>
+    </div>
+  </aside>
+
+  <section class="flex-grow space-y-lg">
+    <div class="flex flex-col md:flex-row md:items-end justify-between gap-md">
+      <div>
+        <h1 class="font-headline-lg text-headline-lg text-on-surface" id="greeting"></h1>
+        <p class="font-body-md text-body-md text-on-surface-variant" id="dateSubtext"></p>
+        <p class="font-body-sm text-body-sm text-on-surface-variant" id="liveClock"></p>
+      </div>
+      <div class="bg-surface-container-lowest p-md rounded-xl border border-outline-variant ambient-shadow min-w-[280px]">
+        <div class="flex justify-between items-center mb-xs">
+          <span class="font-label-md text-label-md text-primary">Weekly Progress</span>
+          <span class="font-label-md text-label-md text-on-surface-variant" id="progressText"></span>
+        </div>
+        <div class="w-full h-2 bg-surface-container rounded-full overflow-hidden">
+          <div class="h-full bg-primary transition-all duration-700 ease-out" id="progressBar" style="width: 0%"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-md" id="clientGrid"></div>
+  </section>
+</main>
+
+<!-- Location Gate + Visit Form Modal -->
+<div class="fixed inset-0 modal-overlay hidden items-center justify-center z-50 px-md" id="visitModal">
+  <div class="bg-surface-container-lowest rounded-xl p-lg w-full max-w-[480px] max-h-[90vh] overflow-y-auto">
+
+    <div id="locationGateStep">
+      <div class="flex flex-col items-center text-center py-lg">
+        <span class="material-symbols-outlined !text-[48px] text-primary mb-sm">location_on</span>
+        <h2 class="font-headline-md text-headline-md mb-xs">Enable Location</h2>
+        <p class="font-body-md text-body-md text-on-surface-variant mb-lg">
+          A precise GPS location is required to log this visit. This confirms the visit happened on-site —
+          approximate or network-based locations are not accepted.
+        </p>
+        <p class="font-body-sm text-body-sm text-error hidden mb-md" id="locationError"></p>
+        <button class="w-full py-sm bg-primary text-on-primary rounded-lg font-label-md" id="enableLocationBtn">
+          Enable Location &amp; Continue
+        </button>
+        <button class="mt-sm text-on-surface-variant font-label-md" id="cancelLocationBtn">Cancel</button>
+      </div>
+    </div>
+
+    <form id="visitForm" class="hidden space-y-md">
+      <h2 class="font-headline-md text-headline-md" id="visitFormClientName"></h2>
+      <p class="font-body-sm text-body-sm text-secondary flex items-center gap-1" id="visitFormLocationStatus">
+        <span class="material-symbols-outlined text-[16px]">check_circle</span>
+        Location captured
+      </p>
+
+      <div class="space-y-xs">
+        <label class="font-label-md text-label-md text-on-surface-variant">Discussion Notes</label>
+        <textarea id="discussionNotes" rows="3" class="w-full p-sm rounded-lg border border-outline-variant outline-none focus:border-primary" placeholder="What was discussed..."></textarea>
+      </div>
+
+      <div class="space-y-xs">
+        <label class="font-label-md text-label-md text-on-surface-variant">Products Discussed</label>
+        <select id="productsSelect" multiple class="w-full p-sm rounded-lg border border-outline-variant outline-none focus:border-primary h-28"></select>
+        <p class="font-body-sm text-body-sm text-on-surface-variant">Select the products you discussed. Add a quantity below to also order any of them for the client.</p>
+      </div>
+
+      <!-- Order builder: one row per selected product; quantity optional.
+           Any product given a quantity is placed on a draft order. -->
+      <div id="orderSection" class="hidden space-y-xs">
+        <label class="font-label-md text-label-md text-on-surface-variant">Order (optional)</label>
+        <div id="orderLines" class="space-y-xs"></div>
+        <div class="flex justify-between items-center pt-xs border-t border-outline-variant">
+          <span class="font-label-md text-label-md text-on-surface-variant">Order Total</span>
+          <span class="font-headline-md text-headline-md text-primary" id="orderTotal">0</span>
+        </div>
+        <p class="font-body-sm text-body-sm text-on-surface-variant">Leave a quantity at 0 for products that were only discussed, not ordered. The order is created as a draft for your manager to confirm.</p>
+      </div>
+
+      <div class="space-y-xs">
+        <label class="font-label-md text-label-md text-on-surface-variant">Outcome</label>
+        <select id="outcomeSelect" required class="w-full p-sm rounded-lg border border-outline-variant outline-none focus:border-primary">
+          <option value="">Select outcome...</option>
+          <option value="Interested">Interested</option>
+          <option value="Not Interested">Not Interested</option>
+          <option value="Follow-up Needed">Follow-up Needed</option>
+        </select>
+      </div>
+
+      <p class="font-body-sm text-body-sm text-error hidden" id="visitFormError"></p>
+
+      <div class="flex gap-sm">
+        <button type="submit" class="flex-grow py-sm bg-primary text-on-primary rounded-lg font-label-md" id="completeVisitBtn">Complete Visit</button>
+        <button type="button" class="px-md py-sm border border-outline-variant rounded-lg font-label-md" id="cancelVisitFormBtn">Cancel</button>
+      </div>
+    </form>
+
+  </div>
+</div>
+
+<!-- Request Ad-hoc Visit Modal — two steps: pick the client, then
+     justify it. Nothing happens until the manager approves. -->
+<div class="fixed inset-0 modal-overlay hidden items-center justify-center z-50 px-md" id="addClientModal">
+  <div class="bg-surface-container-lowest rounded-xl p-lg w-full max-w-[440px]">
+
+    <div id="adhocSearchStep">
+      <h2 class="font-headline-md text-headline-md mb-xs">Request Unplanned Visit</h2>
+      <p class="font-body-sm text-body-sm text-on-surface-variant mb-md">
+        Your manager approves this before you can check in.
+      </p>
+      <input id="customerSearchInput" type="text" placeholder="Search client name..." class="w-full p-sm rounded-lg border border-outline-variant outline-none focus:border-primary mb-sm">
+      <div id="customerResults" class="space-y-xs max-h-64 overflow-y-auto"></div>
+      <button type="button" class="mt-md text-on-surface-variant font-label-md" id="cancelAddClientBtn">Cancel</button>
+    </div>
+
+    <form id="adhocReasonStep" class="hidden">
+      <h2 class="font-headline-md text-headline-md mb-xs">Why this visit?</h2>
+      <p class="font-body-md text-body-md text-primary mb-sm" id="adhocClientName"></p>
+      <select id="adhocContactSelect" class="w-full p-sm rounded-lg border border-outline-variant outline-none focus:border-primary mb-md">
+        <option value="">Point of contact (optional)</option>
+      </select>
+      <textarea id="adhocReason" rows="4" required
+        class="w-full p-sm rounded-lg border border-outline-variant outline-none focus:border-primary"
+        placeholder="e.g. Client called about a stock issue and asked to be seen today."></textarea>
+      <p class="font-body-sm text-body-sm text-error hidden mt-sm" id="adhocError"></p>
+      <div class="flex gap-sm mt-md">
+        <button type="submit" class="flex-grow py-sm bg-primary text-on-primary rounded-lg font-label-md" id="sendAdhocBtn">
+          Send for Approval
+        </button>
+        <button type="button" class="px-md py-sm border border-outline-variant rounded-lg font-label-md" id="backToSearchBtn">Back</button>
+      </div>
+    </form>
+
+  </div>
+</div>
+
+<!-- Weekly Planner Modal -->
+<div class="fixed inset-0 modal-overlay hidden items-center justify-center z-50 px-md" id="planModal">
+  <div class="bg-surface-container-lowest rounded-xl w-full max-w-[760px] max-h-[92vh] flex flex-col">
+
+    <div class="p-lg pb-md border-b border-outline-variant">
+      <div class="flex items-start justify-between gap-md">
+        <div>
+          <h2 class="font-headline-md text-headline-md">My Weekly Plan</h2>
+          <p class="font-body-sm text-body-sm text-on-surface-variant" id="planWeekLabel"></p>
+        </div>
+        <button type="button" class="material-symbols-outlined text-on-surface-variant hover:text-primary" id="closePlanBtn">close</button>
+      </div>
+      <div class="mt-md hidden" id="planBanner"></div>
+    </div>
+
+    <div class="p-lg overflow-y-auto flex-grow space-y-md">
+      <div id="planLines" class="space-y-xs"></div>
+
+      <div class="hidden border-t border-outline-variant pt-md" id="planEditor">
+        <h3 class="font-label-md text-label-md text-primary mb-sm">ADD A VISIT</h3>
+        <div class="relative">
+          <input id="planCustomerInput" type="text" placeholder="Search client name..." class="w-full p-sm rounded-lg border border-outline-variant outline-none focus:border-primary">
+          <div id="planCustomerResults" class="absolute z-10 left-0 right-0 bg-surface-container-lowest border border-outline-variant rounded-lg mt-1 space-y-xs max-h-48 overflow-y-auto hidden"></div>
+        </div>
+        <select id="planContactSelect" class="w-full p-sm rounded-lg border border-outline-variant outline-none focus:border-primary mt-sm" disabled>
+          <option value="">Point of contact — pick a client first</option>
+        </select>
+        <div class="flex flex-col sm:flex-row gap-sm mt-sm">
+          <input id="planDateInput" type="date" class="flex-grow p-sm rounded-lg border border-outline-variant outline-none focus:border-primary">
+          <input id="planTimeInput" type="time" class="flex-grow p-sm rounded-lg border border-outline-variant outline-none focus:border-primary">
+          <button type="button" class="px-md py-sm bg-secondary text-on-primary rounded-lg font-label-md whitespace-nowrap" id="addPlanLineBtn">Add</button>
+        </div>
+        <p class="font-body-sm text-body-sm text-error hidden mt-sm" id="planEditorError"></p>
+      </div>
+    </div>
+
+    <div class="p-lg pt-md border-t border-outline-variant flex flex-wrap gap-sm justify-end">
+      <p class="font-body-sm text-body-sm text-error hidden mr-auto self-center" id="planError"></p>
+      <button type="button" class="px-md py-sm border border-outline-variant rounded-lg font-label-md hidden" id="savePlanBtn">Save Draft</button>
+      <button type="button" class="px-md py-sm bg-primary text-on-primary rounded-lg font-label-md hidden" id="submitPlanBtn">Send for Approval</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- My Clients Modal — every organization this delegate owns, grouped
+     by organization, with each point of contact and their speciality. -->
+<div class="fixed inset-0 modal-overlay hidden items-center justify-center z-50 px-md" id="myClientsModal">
+  <div class="bg-surface-container-lowest rounded-xl w-full max-w-[640px] max-h-[92vh] flex flex-col">
+    <div class="p-lg pb-md border-b border-outline-variant flex items-start justify-between gap-md">
+      <div>
+        <h2 class="font-headline-md text-headline-md">My Clients</h2>
+        <p class="font-body-sm text-body-sm text-on-surface-variant">Who you're responsible for, and who to see there.</p>
+      </div>
+      <button type="button" class="material-symbols-outlined text-on-surface-variant hover:text-primary" id="closeMyClientsBtn">close</button>
+    </div>
+    <div class="p-lg overflow-y-auto flex-grow" id="myClientsBody"></div>
+  </div>
+</div>
+
+<button class="md:hidden fixed bottom-6 right-6 w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center" id="mobileAddBtn">
+  <span class="material-symbols-outlined">add</span>
+</button>
+<script src="/assets/medvisitpro/js/common.js?v={{ asset_version }}"></script>
+<script src="/assets/medvisitpro/js/delegate.js?v={{ asset_version }}"></script>
+</body>
+</html>

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Sign in to MedvisitPro</title>
+<link rel="preload" href="/assets/medvisitpro/fonts/ibm-plex-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/medvisitpro/fonts/material-symbols-subset-2.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/medvisitpro/css/medvisitpro.css?v={{ asset_version }}">
+</head>
+<body class="bg-background text-on-surface font-body-md min-h-screen flex flex-col">
+
+<header class="bg-surface shadow-[0px_4px_12px_rgba(15,23,42,0.05)] fixed top-0 left-0 right-0 z-50">
+  <div class="flex justify-between items-center w-full px-md md:px-xl py-xs max-w-container-max mx-auto">
+    <div class="flex items-center gap-xs">
+      <span class="font-headline-md text-headline-md font-bold text-primary">MedvisitPro</span>
+    </div>
+    <div class="flex items-center gap-md">
+      <nav class="hidden md:flex gap-md items-center">
+        <a class="text-on-surface-variant font-medium hover:text-primary transition-colors" href="/">Solutions</a>
+        <a class="text-on-surface-variant font-medium hover:text-primary transition-colors" href="/">Security</a>
+        <a class="text-primary font-bold border-b-2 border-primary pb-1" href="/login">Sign In</a>
+      </nav>
+      <a href="/contact" class="bg-primary text-on-primary px-sm py-xs rounded-lg font-label-md hover:opacity-90 transition-opacity">Support</a>
+    </div>
+  </div>
+</header>
+
+<main class="flex-grow flex items-center justify-center px-md bg-surface pt-24 pb-12">
+  <div class="w-full max-w-[440px] bg-surface-container-lowest rounded-xl p-lg border border-outline-variant/30 shadow-sm">
+
+    <div class="flex flex-col items-center mb-lg text-center">
+      <div class="mb-sm text-primary">
+        <span class="material-symbols-outlined !text-[48px]" style="font-variation-settings: 'FILL' 1;">medical_services</span>
+      </div>
+      <h1 class="font-headline-md text-headline-md text-on-surface mb-xs">Sign in to MedvisitPro</h1>
+      <p class="font-body-md text-body-md text-on-surface-variant">Enter your details to access your account.</p>
+    </div>
+
+    <!-- Error banner -->
+    <div id="errorBanner" class="hidden mb-md px-sm py-xs rounded-lg bg-error-container text-on-error-container text-body-sm"></div>
+
+    <form class="space-y-md" id="loginForm">
+      <div class="space-y-xs">
+        <label class="font-label-md text-label-md text-on-surface-variant" for="login_id">Email or Username</label>
+        <div class="relative group">
+          <span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors">person</span>
+          <input class="w-full pl-[44px] pr-sm py-sm rounded-lg border border-outline-variant bg-surface-container-lowest font-body-md focus:border-primary focus:ring-4 focus:ring-secondary-container/20 transition-all placeholder:text-outline/40 outline-none" id="login_id" placeholder="name@clinic.com or username" required type="text" autocomplete="username">
+        </div>
+      </div>
+
+      <div class="space-y-xs">
+        <label class="font-label-md text-label-md text-on-surface-variant" for="password">Password</label>
+        <div class="relative group">
+          <span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors">lock</span>
+          <input class="w-full pl-[44px] pr-[44px] py-sm rounded-lg border border-outline-variant bg-surface-container-lowest font-body-md focus:border-primary focus:ring-4 focus:ring-secondary-container/20 transition-all placeholder:text-outline/40 outline-none" id="password" placeholder="••••••••" required type="password" autocomplete="current-password">
+          <button class="absolute right-sm top-1/2 -translate-y-1/2 text-outline hover:text-on-surface transition-colors cursor-pointer focus:outline-none" onclick="togglePassword()" type="button">
+            <span class="material-symbols-outlined" id="eyeIcon">visibility</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between font-label-md">
+        <label class="flex items-center gap-xs cursor-pointer group">
+          <input class="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary focus:ring-offset-0 cursor-pointer" type="checkbox" id="rememberMe">
+          <span class="text-on-surface-variant group-hover:text-on-surface transition-colors">Remember me</span>
+        </label>
+        <a class="text-primary hover:text-secondary-fixed-variant transition-colors" href="/forgot-password">Forgot password?</a>
+      </div>
+
+      <button class="w-full py-sm bg-primary text-on-primary rounded-lg font-label-md text-[16px] shadow-sm hover:opacity-95 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center" type="submit" id="submitBtn">
+        Sign In
+      </button>
+    </form>
+
+    {% if google_login_url %}
+    <div class="flex items-center gap-sm my-md">
+      <div class="flex-grow h-px bg-outline-variant"></div>
+      <span class="text-label-sm text-outline-variant">OR</span>
+      <div class="flex-grow h-px bg-outline-variant"></div>
+    </div>
+    <a href="{{ google_login_url }}" class="w-full flex items-center justify-center gap-xs py-sm border border-outline-variant rounded-lg font-label-md hover:bg-surface-container-low transition-colors">
+      <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+        <path d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.9c1.7-1.57 2.7-3.88 2.7-6.62z" fill="#4285F4"/>
+        <path d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.9-2.26c-.8.54-1.83.86-3.06.86-2.35 0-4.34-1.59-5.05-3.72H.96v2.33A9 9 0 0 0 9 18z" fill="#34A853"/>
+        <path d="M3.95 10.7A5.4 5.4 0 0 1 3.67 9c0-.59.1-1.17.28-1.7V4.97H.96A9 9 0 0 0 0 9c0 1.45.35 2.83.96 4.03l2.99-2.33z" fill="#FBBC05"/>
+        <path d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.97l2.99 2.33C4.66 5.17 6.65 3.58 9 3.58z" fill="#EA4335"/>
+      </svg>
+      Sign in with Google
+    </a>
+    {% endif %}
+
+  </div>
+</main>
+
+<footer class="bg-surface-container-low border-t border-outline-variant mt-auto">
+  <div class="flex flex-col md:flex-row justify-between items-center w-full px-md py-sm max-w-container-max mx-auto gap-xs">
+    <div class="flex items-center gap-sm">
+      <span class="font-label-md text-label-md font-bold text-on-surface">MedvisitPro</span>
+      <span class="font-label-sm text-label-sm text-on-surface-variant">© 2026 MedvisitPro. All rights reserved.</span>
+    </div>
+    <nav class="flex gap-md">
+      <a class="font-label-sm text-label-sm text-on-surface-variant hover:text-secondary transition-colors" href="/terms">Terms of Service</a>
+      <a class="font-label-sm text-label-sm text-on-surface-variant hover:text-secondary transition-colors" href="/privacy">Privacy Policy</a>
+      <a class="font-label-sm text-label-sm text-on-surface-variant hover:text-secondary transition-colors" href="/security">Security Compliance</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+function togglePassword() {
+  const passwordInput = document.getElementById('password');
+  const eyeIcon = document.getElementById('eyeIcon');
+  if (passwordInput.type === 'password') {
+    passwordInput.type = 'text';
+    eyeIcon.textContent = 'visibility_off';
+  } else {
+    passwordInput.type = 'password';
+    eyeIcon.textContent = 'visibility';
+  }
+}
+
+function showError(msg) {
+  const banner = document.getElementById('errorBanner');
+  banner.textContent = msg;
+  banner.classList.remove('hidden');
+}
+
+function hideError() {
+  document.getElementById('errorBanner').classList.add('hidden');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.getElementById('loginForm');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideError();
+
+    const loginId = document.getElementById('login_id').value.trim();
+    const password = document.getElementById('password').value;
+    const btn = document.getElementById('submitBtn');
+    const originalText = btn.innerHTML;
+
+    if (!loginId) {
+      showError('Please enter your email or username.');
+      return;
+    }
+
+    btn.innerHTML = '<span class="material-symbols-outlined animate-spin">progress_activity</span>';
+    btn.disabled = true;
+
+    try {
+      // Frappe's /api/method/login accepts either an email or a
+      // username in the "usr" field — no backend change needed.
+      const res = await fetch('/api/method/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ usr: loginId, pwd: password }),
+        credentials: 'same-origin'
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        // home_page is set by Frappe core, or overridden by your
+        // on_session_creation hook (role-based redirect)
+        window.location.href = data.home_page || '/app';
+      } else {
+        showError(data.message || 'Invalid email or password. Please try again.');
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }
+    } catch (err) {
+      showError('Something went wrong. Please check your connection and try again.');
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+    }
+  });
+});
+</script>
+</body>
+</html>

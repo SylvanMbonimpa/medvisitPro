@@ -1,0 +1,163 @@
+{
+ "doctype": "DocType",
+ "name": "Visit Assignment",
+ "module": "Med Visit Pro",
+ "custom": 0,
+ "istable": 0,
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "autoname": "format:VA-{#####}",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "fields": [
+  {
+   "fieldname": "delegate",
+   "fieldtype": "Link",
+   "label": "Delegate",
+   "options": "User",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "contact_person",
+   "fieldtype": "Link",
+   "label": "Point of Contact",
+   "options": "Contact",
+   "description": "Who this visit is with — carried over from the plan line when approved, or picked by the manager when assigning directly."
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "scheduled_date",
+   "fieldtype": "Date",
+   "label": "Scheduled Date",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "scheduled_time",
+   "fieldtype": "Time",
+   "label": "Scheduled Time"
+  },
+  {
+   "fieldname": "week_start_date",
+   "fieldtype": "Date",
+   "label": "Week Start Date (Monday)",
+   "read_only": 1,
+   "in_standard_filter": 1,
+   "description": "Auto-calculated from Scheduled Date. Used for weekly reporting."
+  },
+  {
+   "fieldname": "section_break_1",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Pending\nCompleted\nMissed",
+   "default": "Pending",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "visit",
+   "fieldtype": "Link",
+   "label": "Visit",
+   "options": "Visit",
+   "read_only": 1,
+   "description": "Auto-filled once the delegate completes this visit."
+  },
+  {
+   "fieldname": "assigned_by",
+   "fieldtype": "Link",
+   "label": "Assigned By",
+   "options": "User",
+   "read_only": 1,
+   "default": "__user"
+  },
+  {
+   "fieldname": "visit_type",
+   "fieldtype": "Select",
+   "label": "Visit Type",
+   "options": "Scheduled\nAd-hoc",
+   "default": "Scheduled",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "description": "Scheduled = created by a Delegate Manager, either directly or by approving a delegate's Weekly Visit Plan. Ad-hoc = self-created by the Delegate on the spot. Weekly compliance reports should filter to Scheduled only."
+  },
+  {
+   "fieldname": "weekly_plan",
+   "fieldtype": "Link",
+   "label": "Weekly Visit Plan",
+   "options": "Weekly Visit Plan",
+   "read_only": 1,
+   "description": "Set when this assignment came from an approved plan line. Empty for assignments a manager created directly and for Ad-hoc visits."
+  },
+  {
+   "fieldname": "section_break_archive",
+   "fieldtype": "Section Break",
+   "label": "Archive",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "archived",
+   "fieldtype": "Check",
+   "label": "Archived",
+   "default": "0",
+   "read_only": 1,
+   "in_standard_filter": 1,
+   "description": "Soft-deleted from Visit History — a Delegate Manager 'deleting' a row sets this instead of removing the record, so the underlying history survives for compliance and can be restored. See archive_visit_assignment/restore_visit_assignment in api.py."
+  },
+  {
+   "fieldname": "column_break_archive",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "archived_on",
+   "fieldtype": "Datetime",
+   "label": "Archived On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "archived_by",
+   "fieldtype": "Link",
+   "label": "Archived By",
+   "options": "User",
+   "read_only": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1, "write": 1, "create": 1, "delete": 1,
+   "report": 1, "export": 1, "print": 1, "email": 1
+  },
+  {
+   "role": "Delegate Manager",
+   "read": 1, "write": 1, "create": 1, "delete": 1,
+   "report": 1, "export": 1
+  },
+  {
+   "role": "Delegate",
+   "read": 1,
+   "report": 1
+  }
+ ]
+}

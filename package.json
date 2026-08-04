@@ -1,0 +1,15 @@
+{
+  "name": "medvisitpro-assets",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Build tooling for MedvisitPro's self-hosted CSS. Compiles the Tailwind bundle the www/ pages load from /assets/medvisitpro/css/, replacing the runtime cdn.tailwindcss.com compiler.",
+  "scripts": {
+    "build:css": "tailwindcss -i ./styles/tailwind.css -o ./medvisitpro/public/css/medvisitpro.css --minify",
+    "watch:css": "tailwindcss -i ./styles/tailwind.css -o ./medvisitpro/public/css/medvisitpro.css --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/container-queries": "^0.1.1",
+    "@tailwindcss/forms": "^0.5.9",
+    "tailwindcss": "^3.4.17"
+  }
+}

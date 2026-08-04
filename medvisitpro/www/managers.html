@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>MedvisitPro | Manager Dashboard</title>
+<link rel="preload" href="/assets/medvisitpro/fonts/ibm-plex-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/medvisitpro/fonts/material-symbols-subset-2.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/medvisitpro/css/medvisitpro.css?v={{ asset_version }}">
+</head>
+<body class="text-on-surface">
+
+<script id="page-data" type="application/json">
+{{ week_data | tojson }}
+</script>
+<script>
+  window.CSRF_TOKEN = "{{ csrf_token }}";
+  window.MANAGER_NAME = "{{ manager_name }}";
+  window.MANAGER_IMAGE = "{{ manager_image }}";
+  window.MANAGER_EMAIL = "{{ manager_email }}";
+  window.IS_REGIONAL_MANAGER = {{ "true" if is_regional_manager else "false" }};
+</script>
+
+{% set active_nav = "dashboard" %}
+{% set nav_mode = "spa" %}
+{# The whole shell — rail and content — is centred in one container,
+   so on a wide monitor the sidebar and body stay together as one panel
+   instead of the rail hugging the screen edge. #}
+<div class="mx-auto flex w-full max-w-container-app min-h-screen bg-surface">
+{% include "medvisitpro/templates/includes/manager_sidebar.html" %}
+
+<div class="flex flex-col flex-1 min-w-0">
+{% include "medvisitpro/templates/includes/manager_topbar.html" %}
+
+<main class="flex-1 pt-md pb-24 md:pb-lg px-margin-mobile md:px-margin-desktop">
+  <section class="space-y-lg">
+    <div id="dashboardView" class="space-y-lg">
+
+    <div class="flex flex-col md:flex-row md:items-end justify-between gap-md">
+      <div>
+        <h1 class="font-headline-lg text-headline-lg text-primary" id="greeting"></h1>
+        <p class="font-body-sm text-body-sm text-on-surface-variant" id="dashboardSubtitle">Team visit schedule for this week</p>
+        <p class="font-body-sm text-body-sm text-on-surface-variant" id="liveClock"></p>
+      </div>
+    </div>
+
+    <!-- ========================================================
+         Summary panels, fed by api.get_manager_dashboard()
+         ======================================================== -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+
+      <div class="bg-surface-container-lowest p-md rounded-card border border-outline-variant ambient-shadow">
+        <p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-xs">Visits completed this week</p>
+        <div class="flex items-baseline gap-sm flex-wrap">
+          <span class="font-headline-lg text-headline-lg text-primary" id="statVisitsCompleted">0</span>
+          <span class="hidden items-center gap-0.5 px-2 py-0.5 rounded-full font-label-sm text-label-sm" id="statVisitsDelta"></span>
+        </div>
+        <p class="mt-sm font-label-sm text-label-sm text-on-surface-variant" id="statVisitsPrevious"></p>
+      </div>
+
+      <div class="bg-surface-container-lowest p-md rounded-card border border-outline-variant ambient-shadow relative overflow-hidden">
+        <p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-xs">Most discussed product</p>
+        <div class="relative z-10" id="statProductBody">
+          <h3 class="font-headline-sm text-headline-sm text-primary mb-xs truncate" id="statProductName">—</h3>
+          <div class="space-y-1">
+            <div class="flex items-center justify-between gap-sm">
+              <span class="font-label-sm text-label-sm text-on-surface-variant">Converted to an order</span>
+              <span class="font-label-lg text-label-lg text-secondary" id="statProductOrdered">—</span>
+            </div>
+            <div class="flex items-center justify-between gap-sm">
+              <span class="font-label-sm text-label-sm text-on-surface-variant">Discussed only</span>
+              <span class="font-label-lg text-label-lg text-outline" id="statProductDeclined">—</span>
+            </div>
+          </div>
+          <p class="mt-sm font-label-sm text-label-sm text-on-surface-variant" id="statProductMeta"></p>
+        </div>
+        <div class="absolute -right-4 -bottom-4 opacity-5 pointer-events-none">
+          <span class="material-symbols-outlined text-[96px]">pill</span>
+        </div>
+      </div>
+
+      <div class="bg-surface-container-lowest p-md rounded-card border border-outline-variant ambient-shadow">
+        <p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-xs">Active field delegates</p>
+        <div class="flex items-center gap-md">
+          <div class="flex-1">
+            <h3 class="font-headline-lg text-headline-lg text-on-surface">
+              <span id="statDelegatesActive">0</span><span class="font-body-lg text-body-lg text-on-surface-variant">/<span id="statDelegatesTotal">0</span></span>
+            </h3>
+            <div class="w-full bg-surface-container-highest h-2 rounded-full mt-xs overflow-hidden">
+              <div class="bg-secondary h-full rounded-full transition-all duration-700" id="statDelegatesBar" style="width:0%"></div>
+            </div>
+          </div>
+          <div class="text-right" id="statDelegatesInactiveWrap">
+            <p class="font-label-lg text-label-lg text-error" id="statDelegatesInactive">0 out</p>
+            <p class="font-label-sm text-label-sm text-on-surface-variant">Disabled</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="grid grid-cols-1 gap-gutter">
+
+      <div>
+        <section class="bg-surface-container-lowest rounded-card border border-outline-variant ambient-shadow overflow-hidden h-full flex flex-col">
+          <div class="px-md py-sm border-b border-outline-variant flex items-center justify-between gap-sm">
+            <div>
+              <h4 class="font-headline-sm text-headline-sm text-primary">Delegate performance</h4>
+              <p class="font-label-sm text-label-sm text-on-surface-variant">Completed vs assigned, by client class</p>
+            </div>
+          </div>
+          <div class="overflow-x-auto flex-1">
+            <table class="w-full text-left">
+              <thead class="bg-surface-container-low border-b border-outline-variant">
+                <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider" id="perfTableHead"></tr>
+              </thead>
+              <tbody class="divide-y divide-outline-variant" id="perfTableBody"></tbody>
+            </table>
+            <p class="hidden font-body-sm text-body-sm text-on-surface-variant text-center py-lg" id="perfTableEmpty"></p>
+          </div>
+          <div class="p-sm bg-surface-container-lowest border-t border-outline-variant text-center">
+            <button type="button" data-view="delegates"
+              class="bg-surface-container-lowest border border-outline-variant px-md py-2 rounded-btn text-primary font-label-lg text-label-lg hover:bg-surface-container transition-colors">
+              View all delegates
+            </button>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- Day + status filters. These used to live in the left rail; the
+         rail is now navigation only, and these only ever applied to the
+         dashboard's table, so they sit with it. -->
+    <div class="flex flex-col lg:flex-row lg:items-center gap-sm justify-between" id="dashboardOnlySidebar">
+      <div class="flex items-center gap-1 overflow-x-auto pb-1" id="dayTabs"></div>
+      <div class="flex items-center gap-md flex-shrink-0" id="dashboardOnlyStatusFilter">
+        <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider hidden sm:inline">Status</span>
+        <label class="flex items-center gap-xs cursor-pointer group">
+          <input checked class="status-filter rounded border-outline-variant text-primary focus:ring-primary" type="checkbox" data-status="Pending">
+          <span class="font-body-sm text-body-sm text-on-surface-variant group-hover:text-on-surface">Pending</span>
+        </label>
+        <label class="flex items-center gap-xs cursor-pointer group">
+          <input checked class="status-filter rounded border-outline-variant text-primary focus:ring-primary" type="checkbox" data-status="Completed">
+          <span class="font-body-sm text-body-sm text-on-surface-variant group-hover:text-on-surface">Completed</span>
+        </label>
+        <label class="flex items-center gap-xs cursor-pointer group">
+          <input checked class="status-filter rounded border-outline-variant text-primary focus:ring-primary" type="checkbox" data-status="Missed">
+          <span class="font-body-sm text-body-sm text-on-surface-variant group-hover:text-on-surface">Missed</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="bg-surface-container-lowest p-md rounded-card border border-outline-variant ambient-shadow">
+      <div class="flex justify-between items-center mb-xs">
+        <span class="font-label-md text-label-md text-primary">Team progress</span>
+        <span class="font-label-md text-label-md text-on-surface-variant" id="progressText"></span>
+      </div>
+      <div class="w-full h-2 bg-surface-container rounded-full overflow-hidden">
+        <div class="h-full bg-primary transition-all duration-700 ease-out" id="progressBar" style="width: 0%"></div>
+      </div>
+    </div>
+
+
+    <div class="bg-surface-container-lowest rounded-xl border border-outline-variant ambient-shadow overflow-hidden">
+      <div class="flex items-center justify-between p-md border-b border-outline-variant">
+        <h3 class="font-headline-md text-headline-md text-on-surface">This Week's Visits</h3>
+        <button type="button" id="openAssignFromTableBtn" class="bg-primary text-on-primary px-md py-2 rounded-lg font-label-md flex items-center gap-1">
+          <span class="material-symbols-outlined text-[18px]">add</span>
+          Assign New Visit
+        </button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-body-sm">
+          <thead class="text-left border-b border-outline-variant bg-surface-container-low">
+            <tr>
+              <th class="py-2 px-md font-label-md text-on-surface-variant">Delegate</th>
+              <th class="py-2 px-md font-label-md text-on-surface-variant">Client</th>
+              <th class="py-2 px-md font-label-md text-on-surface-variant">Address</th>
+              <th class="py-2 px-md font-label-md text-on-surface-variant">Phone</th>
+              <th class="py-2 px-md font-label-md text-on-surface-variant">Status</th>
+              <th class="py-2 px-md font-label-md text-on-surface-variant">Scheduled Date</th>
+              <th class="py-2 px-md font-label-md text-on-surface-variant">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="clientGrid"></tbody>
+        </table>
+        <p class="text-body-sm text-on-surface-variant text-center py-lg hidden" id="dashboardTableEmpty">No visits match the current filters.</p>
+      </div>
+    </div>
+    </div>
+
+    <!-- Table view: shown instead of dashboardView when a Quick Link is clicked -->
+    <div id="tableView" class="hidden space-y-md">
+      <div class="flex items-center justify-between gap-md flex-wrap">
+        <h2 class="font-headline-lg text-headline-lg text-on-surface" id="tableViewTitle"></h2>
+        <div class="flex items-center gap-md">
+          <!-- Import/export entry point: one place for both directions,
+               rather than a separate button per action. Clients-only —
+               Delegates and Visit History have no bulk data flow.
+               Gear opens a small menu rather than the modal directly,
+               so there's room for other table-level actions here later
+               without every one of them needing its own icon. -->
+          <div class="relative">
+            <button type="button" id="tableSettingsBtn" aria-haspopup="true" aria-expanded="false" aria-label="Table options"
+              class="hidden border border-outline-variant text-on-surface-variant hover:text-primary hover:border-primary p-2 rounded-btn items-center justify-center transition-colors">
+              <span class="material-symbols-outlined text-[20px]">settings</span>
+            </button>
+            <div id="tableSettingsMenu" class="hidden absolute right-0 mt-1 w-44 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg z-20 overflow-hidden">
+              <button type="button" id="tableSettingsImportExportBtn" class="w-full text-left px-sm py-2 hover:bg-surface-container font-body-sm text-body-sm text-on-surface">Import/Export</button>
+              <!-- Acts on whichever rows are checked — the same
+                   selection Export uses. Greyed out with nothing
+                   checked; see updateTableSettingsDeleteState. -->
+              <button type="button" id="tableSettingsDeleteBtn" disabled class="w-full text-left px-sm py-2 hover:bg-surface-container font-body-sm text-body-sm text-error disabled:text-on-surface-variant disabled:opacity-50 disabled:cursor-not-allowed">Delete</button>
+              <button type="button" id="tableSettingsColumnsBtn" class="w-full text-left px-sm py-2 hover:bg-surface-container font-body-sm text-body-sm text-on-surface">Columns</button>
+            </div>
+            <!-- Odoo-style optional-columns picker: which columns show
+                 is per-view (currently just Clients) and persists via
+                 localStorage — see loadColumnPrefs in managers.js. -->
+            <div id="tableColumnsPanel" class="hidden absolute right-0 mt-1 w-56 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg z-20 p-sm space-y-xs max-h-72 overflow-y-auto"></div>
+          </div>
+          <button type="button" id="tableAddBtn" class="hidden bg-primary text-on-primary px-md py-2 rounded-lg font-label-md items-center gap-1">
+            <span class="material-symbols-outlined text-[18px]">add</span>
+            <span id="tableAddBtnLabel">Add</span>
+          </button>
+          <button type="button" id="backToDashboardBtn" class="text-primary font-label-md hover:underline flex items-center gap-1">
+            <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+            Back to Dashboard
+          </button>
+        </div>
+      </div>
+      <div class="bg-surface-container-lowest p-md rounded-xl border border-outline-variant ambient-shadow space-y-sm">
+        <div class="flex flex-wrap gap-sm">
+          <input id="tableSearchInput" type="text" placeholder="Search..." autocomplete="off" class="flex-grow min-w-[200px] p-sm rounded-lg border border-outline-variant outline-none focus:border-primary">
+          <select id="tableDelegateFilter" class="hidden p-sm rounded-lg border border-outline-variant outline-none focus:border-primary">
+            <option value="">All Delegates</option>
+          </select>
+          <select id="tableStatusFilter" class="hidden p-sm rounded-lg border border-outline-variant outline-none focus:border-primary">
+            <option value="">All Statuses</option>
+            <option value="Pending">Pending</option>
+            <option value="Completed">Completed</option>
+            <option value="Missed">Missed</option>
+          </select>
+          <input id="tableDateFrom" type="date" autocomplete="off" class="hidden p-sm rounded-lg border border-outline-variant outline-none focus:border-primary">
+          <input id="tableDateTo" type="date" autocomplete="off" class="hidden p-sm rounded-lg border border-outline-variant outline-none focus:border-primary">
+          <label id="tableShowArchivedWrap" class="hidden items-center gap-xs px-sm py-sm cursor-pointer">
+            <input id="tableShowArchived" type="checkbox" class="rounded border-outline-variant text-primary focus:ring-primary">
+            <span class="font-body-sm text-body-sm text-on-surface-variant">Show Archived</span>
+          </label>
+          <!-- List/Board toggle — generic across every table view (see
+               tableViewMode in managers.js); no icon here on purpose,
+               the app's curated icon-font subset has no view_list/
+               view_kanban glyph and text is unambiguous anyway. -->
+          <div class="flex rounded-btn border border-outline-variant overflow-hidden ml-auto" id="tableViewModeToggle">
+            <button type="button" data-mode="list" class="view-mode-btn px-md py-2 font-label-md bg-primary text-on-primary">List</button>
+            <button type="button" data-mode="kanban" class="view-mode-btn px-md py-2 font-label-md text-on-surface-variant">Board</button>
+          </div>
+        </div>
+        <div class="overflow-x-auto" id="tableListWrap">
+          <!-- min-w-max: with w-full alone, a wide table (the Clients
+               view now runs 11 columns) gets squeezed to the
+               container's width instead of triggering this wrapper's
+               scroll — column text wraps into a mess rather than the
+               table just scrolling sideways. min-w-max makes the
+               table's floor its natural content width, so it only
+               ever shrinks to the container, never below it. -->
+          <table class="w-full min-w-max text-body-md">
+            <thead id="tableHead" class="text-left border-b border-outline-variant"></thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+        <!-- Board mode: one column per distinct value of that view's
+             grouping field (KANBAN_GROUP_LABEL in managers.js), cards
+             built from the same headers/rows List mode already has —
+             see renderKanbanBoard. Not paginated: grouping cards
+             across a page boundary would split a group's own count
+             across two pages, which reads as broken. -->
+        <div class="hidden overflow-x-auto" id="tableKanbanWrap">
+          <div class="flex gap-md items-start pb-sm" id="tableKanbanBoard"></div>
+        </div>
+        <p class="text-body-sm text-on-surface-variant hidden" id="tableEmptyState">No results found.</p>
+        <div id="tablePagination" class="hidden items-center justify-between gap-sm pt-sm border-t border-outline-variant">
+          <span class="text-body-sm text-on-surface-variant" id="tablePaginationInfo"></span>
+          <div class="flex items-center gap-xs">
+            <button type="button" id="tablePrevBtn" class="flex items-center gap-1 px-sm py-1.5 rounded-lg border border-outline-variant text-on-surface-variant hover:bg-primary-container hover:text-on-primary-container disabled:opacity-40 disabled:pointer-events-none transition-all">
+              <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+              Prev
+            </button>
+            <span class="text-body-sm text-on-surface-variant px-sm" id="tablePageIndicator"></span>
+            <button type="button" id="tableNextBtn" class="flex items-center gap-1 px-sm py-1.5 rounded-lg border border-outline-variant text-on-surface-variant hover:bg-primary-container hover:text-on-primary-container disabled:opacity-40 disabled:pointer-events-none transition-all">
+              Next
+              <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Approvals view: delegate weekly plans and ad-hoc requests -->
+    <div id="approvalsView" class="hidden space-y-md">
+      <div class="flex items-center justify-between gap-md flex-wrap">
+        <h2 class="font-headline-lg text-headline-lg text-on-surface">Plan Approvals</h2>
+        <div class="flex items-center gap-md">
+          <select id="approvalsStatusFilter" class="p-sm rounded-lg border border-outline-variant outline-none focus:border-primary">
+            <option value="Pending Approval">Awaiting Approval</option>
+            <option value="Partially Approved">Partially Approved</option>
+            <option value="Approved">Approved</option>
+            <option value="Rejected">Rejected</option>
+            <option value="Draft">Draft</option>
+            <option value="All">All</option>
+          </select>
+          <button type="button" id="approvalsBackBtn" class="text-primary font-label-md hover:underline flex items-center gap-1">
+            <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+            Back to Dashboard
+          </button>
+        </div>
+      </div>
+      <div id="approvalsList" class="space-y-sm"></div>
+    </div>
+
+  </section>
+</main>
+
+<footer class="bg-surface-container border-t border-outline-variant mt-xl">
+  <div class="flex flex-col md:flex-row justify-between items-center px-md w-full max-w-container-max mx-auto py-md gap-xs">
+    <span class="font-label-md text-label-md text-on-surface font-bold">MedvisitPro</span>
+    <span class="font-label-sm text-label-sm text-on-surface-variant">© 2026 MedvisitPro Pharma Solutions. All rights reserved.</span>
+    <div class="flex items-center gap-md">
+      <a class="font-label-sm text-label-sm text-on-surface-variant hover:text-secondary transition-colors" href="#">Compliance Policy</a>
+      <a class="font-label-sm text-label-sm text-on-surface-variant hover:text-secondary transition-colors" href="#">Privacy</a>
+    </div>
+  </div>
+</footer>
+
+</div>
+</div>
+
+<!-- Import / Export Clients Modal — opened from the gear icon on the
+     Client List. One sheet, one row per point of contact, that
+     creates or updates both the organization and the specialist
+     together — see import_roster in api.py. -->
+<div class="fixed inset-0 modal-overlay hidden items-center justify-center z-50 px-md" id="importClientsModal">
+  <div class="bg-surface-container-lowest rounded-xl w-full max-w-[680px] max-h-[92vh] flex flex-col">
+
+    <div class="p-lg pb-md border-b border-outline-variant flex items-start justify-between gap-md">
+      <div>
+        <h2 class="font-headline-md text-headline-md">Import / Export Clients</h2>
+        <p class="font-body-sm text-body-sm text-on-surface-variant">Add new clients from a template, or export existing ones to edit and upload back.</p>
+      </div>
+      <button type="button" class="material-symbols-outlined text-on-surface-variant hover:text-primary" id="closeImportBtn">close</button>
+    </div>
+
+    <div class="p-lg overflow-y-auto flex-grow space-y-lg">
+
+      <div>
+        <h3 class="font-label-md text-label-md text-primary mb-sm">ADD NEW CLIENTS</h3>
+        <div class="flex gap-sm flex-wrap">
+          <button type="button" class="px-md py-sm border border-outline-variant rounded-btn font-label-md flex items-center gap-1" id="downloadXlsxBtn">
+            <span class="material-symbols-outlined text-[18px]">download</span>
+            Blank template (.xlsx)
+          </button>
+          <button type="button" class="px-md py-sm border border-outline-variant rounded-btn font-label-md flex items-center gap-1" id="downloadCsvBtn">
+            <span class="material-symbols-outlined text-[18px]">download</span>
+            Blank template (.csv)
+          </button>
+        </div>
+        <p class="font-body-sm text-body-sm text-on-surface-variant mt-sm">
+          <strong>Organization</strong> and <strong>Point of Contact</strong> are required. The same
+          organization can repeat across many rows — one per specialist — and is only created once.
+        </p>
+      </div>
+
+      <div class="border-t border-outline-variant pt-lg">
+        <h3 class="font-label-md text-label-md text-primary mb-sm">EXPORT CLIENTS</h3>
+        <p class="font-body-sm text-body-sm text-on-surface-variant mb-sm" id="exportScopeLabel"></p>
+
+        <div class="mb-sm" id="exportDelegateFilterWrap">
+          <label class="font-label-md text-label-md text-on-surface-variant">Delegate</label>
+          <select id="exportDelegateFilter" class="w-full p-sm rounded-lg border border-outline-variant outline-none focus:border-primary">
+            <option value="">All delegates</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-md gap-y-xs mb-sm" id="exportColumnList">
+          <!-- Populated from api.list_roster_columns() — see initExportColumns() -->
+        </div>
+        <p class="font-body-sm text-body-sm text-on-surface-variant mb-sm">
+          <strong>Client ID</strong> is what lets a re-upload <em>update</em> these records instead of
+          creating copies of them — leave it checked unless this export is only for reference.
+        </p>
+
+        <div class="flex gap-sm flex-wrap">
+          <button type="button" class="px-md py-sm border border-primary text-primary rounded-btn font-label-md flex items-center gap-1" id="exportXlsxBtn">
+            <span class="material-symbols-outlined text-[18px]">description</span>
+            Export (.xlsx)
+          </button>
+          <button type="button" class="px-md py-sm border border-primary text-primary rounded-btn font-label-md flex items-center gap-1" id="exportCsvBtn">
+            <span class="material-symbols-outlined text-[18px]">description</span>
+            Export (.csv)
+          </button>
+        </div>
+        <p class="font-body-sm text-body-sm text-error hidden mt-sm" id="exportColumnsError">Choose at least one column.</p>
+      </div>
+
+      <div class="border-t border-outline-variant pt-lg">
+        <h3 class="font-label-md text-label-md text-primary mb-sm">UPLOAD A FILE</h3>
+        <p class="font-body-sm text-body-sm text-on-surface-variant mb-sm">
+          One row per point of contact. A new Organization name creates that client; a Point of
+          Contact already on file for it is updated in place (speciality/phone) rather than duplicated.
+        </p>
+        <input id="importFileInput" type="file" accept=".xlsx,.xlsm,.csv"
+          class="w-full p-sm rounded-lg border border-outline-variant outline-none focus:border-primary">
+        <p class="font-body-sm text-body-sm text-error hidden mt-sm" id="importError"></p>
+      </div>
+
+      <div id="importResult" class="hidden border-t border-outline-variant pt-md"></div>
+
+    </div>
+
+    <div class="p-lg pt-md border-t border-outline-variant flex gap-sm justify-end">
+      <button type="button" class="px-md py-sm border border-outline-variant rounded-lg font-label-md" id="cancelImportBtn">Close</button>
+      <button type="button" class="px-md py-sm bg-primary text-on-primary rounded-lg font-label-md" id="runImportBtn">Upload</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Plan Review Modal -->
+<div class="fixed inset-0 modal-overlay hidden items-center justify-center z-50 px-md" id="planReviewModal">
+  <div class="bg-surface-container-lowest rounded-xl w-full max-w-[820px] max-h-[92vh] flex flex-col">
+
+    <div class="p-lg pb-md border-b border-outline-variant flex items-start justify-between gap-md">
+      <div>
+        <h2 class="font-headline-md text-headline-md" id="reviewDelegateName"></h2>
+        <p class="font-body-sm text-body-sm text-on-surface-variant" id="reviewWeekLabel"></p>
+      </div>
+      <button type="button" class="material-symbols-outlined text-on-surface-variant hover:text-primary" id="closePlanReviewBtn">close</button>
+    </div>
+
+    <div class="p-lg overflow-y-auto flex-grow">
+      <div id="reviewLines" class="space-y-sm"></div>
+    </div>
+
+    <div class="p-lg pt-md border-t border-outline-variant flex flex-wrap gap-sm justify-end items-center">
+      <p class="font-body-sm text-body-sm text-error hidden mr-auto" id="reviewError"></p>
+      <button type="button" class="px-md py-sm border border-error text-error rounded-lg font-label-md" id="rejectPlanBtn">Reject All Pending</button>
+      <button type="button" class="px-md py-sm bg-primary text-on-primary rounded-lg font-label-md" id="approvePlanBtn">Approve All Pending</button>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- Assign New Visit Modal -->
+<div class="fixed inset-0 modal-overlay hidden items-center justify-center z-50 px-md" id="assignModal">
+  <div class="bg-surface-container-lowest rounded-xl p-lg w-full max-w-[440px]">
+    <h2 class="font-headline-md text-headline-md mb-md">Assign New Visit</h2>
+
+    <div class="space-y-xs mb-sm">
+      <label class="font-label-md text-label-md text-on-surface-variant">Delegate</label>
+      <input id="delegateSearchInput" type="text" placeholder="Search delegate name..." class="w-full p-sm rounded-lg border border-outline-variant outline-none focus:border-primary">
+      <div id="delegateResults" class="space-y-xs max-h-32 overflow-y-auto"></div>
+      <p class="font-body-sm text-body-sm text-primary hidden" id="selectedDelegateLabel"></p>
+    </div>
+
+    <div class="space-y-xs mb-sm">
+      <label class="font-label-md text-label-md text-on-surface-variant">Client</label>
+      <input id="assignCustomerSearchInput" type="text" placeholder="Search client name..." class="w-full p-sm rounded-lg border border-outline-variant outline-none focus:border-primary">
+      <div id="assignCustomerResults" class="space-y-xs max-h-32 overflow-y-auto"></div>
+      <p class="font-body-sm text-body-sm text-primary hidden" id="selectedCustomerLabel"></p>
+    </div>
+
+    <div class="space-y-xs mb-md">
+      <label class="font-label-md text-label-md text-on-surface-variant">Point of Contact</label>
+      <select id="assignContactSelect" class="w-full p-sm rounded-lg border border-outline-variant outline-none focus:border-primary" disabled>
+        <option value="">Pick a client first</option>
+      </select>
+    </div>
+
+    <div class="space-y-xs mb-md">
+      <label class="font-label-md text-label-md text-on-surface-variant">Date</label>
+      <input id="assignDateInput" type="date" class="w-full p-sm rounded-lg border border-outline-variant outline-none focus:border-primary">
+    </div>
+
+    <p class="font-body-sm text-body-sm text-error hidden mb-sm" id="assignError"></p>
+
+    <div class="flex gap-sm">
+      <button type="button" class="flex-grow py-sm bg-primary text-on-primary rounded-lg font-label-md" id="confirmAssignBtn">Assign Visit</button>
+      <button type="button" class="px-md py-sm border border-outline-variant rounded-lg font-label-md" id="cancelAssignBtn">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<button class="md:hidden fixed bottom-24 right-6 w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center" id="mobileAssignBtn">
+  <span class="material-symbols-outlined">add</span>
+</button>
+
+<!-- Add Client Modal -->
+<div class="fixed inset-0 modal-overlay hidden items-center justify-center z-50 px-md" id="addClientRecordModal">
+  <div class="bg-surface-container-lowest rounded-xl w-full max-w-[680px] max-h-[92vh] flex flex-col">
+
+    <div class="p-lg pb-md border-b border-outline-variant">
+      <h2 class="font-headline-md text-headline-md">Add Specialist-Client</h2>
+      <p class="font-body-sm text-body-sm text-on-surface-variant">
+        Start typing the Organization: pick an existing one to add or edit a Point of Contact under it, or keep
+        typing a new name to create one. Everything is required except Speciality.
+      </p>
+    </div>
+
+    <div class="p-lg overflow-y-auto flex-grow space-y-sm">
+      <div class="grid grid-cols-2 gap-sm">
+        <div class="space-y-xs relative">
+          <label class="font-label-md text-label-md text-on-surface-variant">Organization *</label>
+          <input id="newClientName" type="text" placeholder="e.g. King Faisal Hospital" autocomplete="off" class="w-full p-sm rounded-lg border border-outline-variant outline-none focus:border-primary">
+          <div id="newClientOrgResults" class="hidden absolute z-10 left-0 right-0 mt-1 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg max-h-48 overflow-y-auto"></div>
+          <p class="font-body-sm text-body-sm text-amber-600 hidden" id="newClientOrgSimilarWarning"></p>
+        </div>
+        <div class="space-y-xs">
+          <label class="font-label-md text-label-md text-on-surface-variant">Org-Type *</label>
+          <select id="newClientCategory" class="w-full p-sm rounded-lg border border-outline-variant outline-none focus:border-primary">
+            <option value="">—</option>
+            <option value="Pharmacy">Pharmacy</option>
+            <option value="Clinic">Clinic</option>
+            <option value="Hospital">Hospital</option>
+          </select>
+        </div>
+      </div>
+      <p class="font-body-sm text-body-sm text-primary hidden" id="newClientOrgEditingNote">Editing an existing Organization — Org-Type/Category/Province/District update it; Point of Contact below is added to it (or updated, if the name already matches one of its contacts).</p>
+      <div class="grid grid-cols-2 gap-sm">
+        <div class="space-y-xs">
+          <label class="font-label-md text-label-md text-on-surface-variant">Point of Contact (Specialist) *</label>
+          <input id="newClientPointOfContact" type="text" placeholder="e.g. Dufatanye Darius" class="w-full p-sm rounded-lg border border-outline-variant outline-none focus:border-primary">
+        </div>
+        <div class="space-y-xs">
+          <label class="font-label-md text-label-md text-on-surface-variant">Speciality</label>
+          <input id="newClientSpeciality" type="text" placeholder="e.g. Cardiologist" class="w-full p-sm rounded-lg border border-outline-variant outline-none focus:border-primary">
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-sm">
+        <div class="space-y-xs">
+          <label class="font-label-md text-label-md text-on-surface-variant">Phone *</label>
+          <input id="newClientPhone" type="tel" inputmode="tel" autocomplete="tel" class="w-full p-sm rounded-lg border border-outline-variant outline-none focus:border-primary">
+        </div>
+        <div class="space-y-xs">
+          <label class="font-label-md text-label-md text-on-surface-variant">Email</label>
+          <input id="newClientEmail" type="email" inputmode="email" autocomplete="email" class="w-full p-sm rounded-lg border border-outline-variant outline-none focus:border-primary">
+        </div>
+      </div>
+      <div class="space-y-xs">
+        <label class="font-label-md text-label-md text-on-surface-variant">Category *</label>
+        <select id="newClientClass" class="w-full p-sm rounded-lg border border-outline-variant outline-none focus:border-primary">
+          <option value="">—</option>
+          <option value="Supercore">Supercore — 3 visits/month</option>
+          <option value="Core">Core — 2 visits/month</option>
+          <option value="Noncore">Noncore — 1 visit/month</option>
+        </select>
+      </div>
+      <div class="grid grid-cols-2 gap-sm">
+        <div class="space-y-xs">
+          <label class="font-label-md text-label-md text-on-surface-variant">Province *</label>
+          <select id="newClientProvince" class="w-full p-sm rounded-lg border border-outline-variant outline-none focus:border-primary">
+            <option value="">—</option>
+          </select>
+        </div>
+        <div class="space-y-xs">
+          <label class="font-label-md text-label-md text-on-surface-variant">District *</label>
+          <select id="newClientDistrict" class="w-full p-sm rounded-lg border border-outline-variant outline-none focus:border-primary">
+            <option value="">—</option>
+          </select>
+        </div>
+      </div>
+
+      <p class="font-body-sm text-body-sm text-error hidden" id="addClientError"></p>
+    </div>
+
+    <div class="p-lg pt-md border-t border-outline-variant flex gap-sm justify-end">
+      <button type="button" id="cancelAddClientRecordBtn" class="px-md py-sm border border-outline-variant rounded-lg font-label-md">Cancel</button>
+      <button type="button" id="confirmAddClientBtn" class="px-md py-sm bg-primary text-on-primary rounded-lg font-label-md">Add Client</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Delegate Modal -->
+<div class="fixed inset-0 modal-overlay hidden items-center justify-center z-50 px-md" id="addDelegateModal">
+  <div class="bg-surface-container-lowest rounded-xl p-lg w-full max-w-[440px] max-h-[90vh] overflow-y-auto">
+    <h2 class="font-headline-md text-headline-md mb-md">Add Delegate</h2>
+
+    <div class="space-y-sm">
+      <div class="space-y-xs">
+        <label class="font-label-md text-label-md text-on-surface-variant">Full Name *</label>
+        <input id="newDelegateName" type="text" class="w-full p-sm rounded-lg border border-outline-variant outline-none focus:border-primary">
+      </div>
+      <div class="space-y-xs">
+        <label class="font-label-md text-label-md text-on-surface-variant">Email *</label>
+        <input id="newDelegateEmail" type="email" class="w-full p-sm rounded-lg border border-outline-variant outline-none focus:border-primary">
+      </div>
+      <div class="space-y-xs">
+        <label class="font-label-md text-label-md text-on-surface-variant">Mobile</label>
+        <input id="newDelegateMobile" type="text" class="w-full p-sm rounded-lg border border-outline-variant outline-none focus:border-primary">
+      </div>
+      <p class="font-body-sm text-body-sm text-on-surface-variant">
+        This delegate will carry the same brand(s) you do — brands aren't picked here; they're
+        inherited from your own and stay in step with them.
+      </p>
+      {% if is_regional_manager %}
+      <label class="flex items-center gap-sm cursor-pointer">
+        <input id="newDelegateAlsoManager" type="checkbox" class="rounded border-outline-variant text-primary focus:ring-secondary">
+        <span class="font-body-sm text-body-sm text-on-surface-variant">Make this a Delegate Manager instead (choose their brands)</span>
+      </label>
+      <div class="hidden space-y-xs" id="newDelegateBrandSection">
+        <label class="font-label-md text-label-md text-on-surface-variant">Brands Responsible For</label>
+        <div class="grid grid-cols-2 gap-xs p-sm rounded-lg border border-outline-variant max-h-32 overflow-y-auto" id="newDelegateBrandList"></div>
+        <p class="font-body-sm text-body-sm text-on-surface-variant">None checked = sees every brand.</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <p class="font-body-sm text-body-sm text-error hidden mt-sm" id="addDelegateError"></p>
+
+    <!-- Shown after successful creation, since there's no email being sent -->
+    <div class="hidden bg-secondary-container text-on-secondary-container p-sm rounded-lg mt-sm text-body-sm" id="delegateCreatedInfo"></div>
+
+    <div class="flex gap-sm mt-md">
+      <button type="button" id="confirmAddDelegateBtn" class="flex-grow py-sm bg-primary text-on-primary rounded-lg font-label-md">Add Delegate</button>
+      <button type="button" id="cancelAddDelegateBtn" class="px-md py-sm border border-outline-variant rounded-lg font-label-md">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Visit Detail Modal (read-only) -->
+<div class="fixed inset-0 modal-overlay hidden items-center justify-center z-50 px-md" id="visitDetailModal">
+  <div class="bg-surface-container-lowest rounded-xl p-lg w-full max-w-[520px] max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between mb-md">
+      <h2 class="font-headline-md text-headline-md flex items-center gap-sm">
+        <span class="material-symbols-outlined text-primary">description</span> Visit Details
+      </h2>
+      <button type="button" id="closeVisitDetailBtn" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container text-on-surface-variant">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div id="visitDetailBody"></div>
+  </div>
+</div>
+
+<!-- Client Detail Modal (read-only) -->
+<div class="fixed inset-0 modal-overlay hidden items-center justify-center z-50 px-md" id="clientDetailModal">
+  <div class="bg-surface-container-lowest rounded-xl p-lg w-full max-w-[520px] max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between mb-md">
+      <h2 class="font-headline-md text-headline-md flex items-center gap-sm">
+        <span class="material-symbols-outlined text-primary">storefront</span> Client Details
+      </h2>
+      <button type="button" id="closeClientDetailBtn" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container text-on-surface-variant">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div id="clientDetailBody"></div>
+  </div>
+</div>
+
+<!-- Edit Delegate Modal -->
+<div class="fixed inset-0 modal-overlay hidden items-center justify-center z-50 px-md" id="editDelegateModal">
+  <div class="bg-surface-container-lowest rounded-xl p-lg w-full max-w-[440px] max-h-[90vh] overflow-y-auto">
+    <h2 class="font-headline-md text-headline-md mb-md">Edit Delegate</h2>
+
+    <div class="space-y-sm">
+      <div class="space-y-xs">
+        <label class="font-label-md text-label-md text-on-surface-variant">Full Name *</label>
+        <input id="editDelegateName" type="text" class="w-full p-sm rounded-lg border border-outline-variant outline-none focus:border-primary">
+      </div>
+      <div class="space-y-xs">
+        <label class="font-label-md text-label-md text-on-surface-variant">Email</label>
+        <input id="editDelegateEmail" type="email" disabled class="w-full p-sm rounded-lg border border-outline-variant bg-surface-container text-on-surface-variant outline-none">
+        <p class="font-body-sm text-body-sm text-on-surface-variant">Email is the login identity and can't be changed here.</p>
+      </div>
+      <div class="space-y-xs">
+        <label class="font-label-md text-label-md text-on-surface-variant">Mobile</label>
+        <input id="editDelegateMobile" type="text" class="w-full p-sm rounded-lg border border-outline-variant outline-none focus:border-primary">
+      </div>
+      {% if is_regional_manager %}
+      <label class="flex items-center gap-sm cursor-pointer">
+        <input id="editDelegateAlsoManager" type="checkbox" class="rounded border-outline-variant text-primary focus:ring-secondary">
+        <span class="font-body-sm text-body-sm text-on-surface-variant">Has Delegate Manager access</span>
+      </label>
+      {% endif %}
+      <label class="flex items-center gap-sm cursor-pointer">
+        <input id="editDelegateEnabled" type="checkbox" class="rounded border-outline-variant text-primary focus:ring-secondary">
+        <span class="font-body-sm text-body-sm text-on-surface-variant">Account is active</span>
+      </label>
+
+      {% if is_regional_manager %}
+      <div class="space-y-xs" id="editDelegateManagerSection">
+        <label class="font-label-md text-label-md text-on-surface-variant">Reports To (Manager)</label>
+        <select id="editDelegateManager" class="w-full p-sm rounded-lg border border-outline-variant outline-none focus:border-primary">
+          <option value="">—</option>
+        </select>
+        <p class="font-body-sm text-body-sm text-on-surface-variant">
+          Reassigning re-inherits the new manager's brands — the delegate moves into that team's brand scope.
+        </p>
+      </div>
+      {% endif %}
+
+      <div class="border-t border-outline-variant pt-sm space-y-sm">
+        <div class="grid grid-cols-2 gap-sm" id="editDelegateTerritorySection">
+          <div class="space-y-xs">
+            <label class="font-label-md text-label-md text-on-surface-variant">Primary Territory</label>
+            <select id="editDelegatePrimaryTerritory" class="w-full p-sm rounded-lg border border-outline-variant outline-none focus:border-primary">
+              <option value="">—</option>
+            </select>
+          </div>
+          <div class="space-y-xs">
+            <label class="font-label-md text-label-md text-on-surface-variant">Secondary Territory</label>
+            <select id="editDelegateSecondaryTerritory" class="w-full p-sm rounded-lg border border-outline-variant outline-none focus:border-primary">
+              <option value="">—</option>
+            </select>
+            <p class="font-body-sm text-body-sm text-on-surface-variant">Must be outside Kigali.</p>
+          </div>
+        </div>
+        <p class="font-body-sm text-body-sm text-on-surface-variant hidden" id="editDelegateNoTerritoryNote">
+          Territory only applies to a Delegate's own field coverage — a Delegate Manager isn't assigned one.
+        </p>
+        <div class="space-y-xs">
+          <label class="font-label-md text-label-md text-on-surface-variant">Brands Responsible For</label>
+          <div class="grid grid-cols-2 gap-xs p-sm rounded-lg border border-outline-variant max-h-32 overflow-y-auto" id="editDelegateBrandList"></div>
+          <p class="font-body-sm text-body-sm text-on-surface-variant" id="editDelegateBrandNote">None checked = sees every brand.</p>
+        </div>
+      </div>
+
+      <button type="button" id="viewDelegatePortfolioBtn" class="w-full flex items-center justify-center gap-xs py-sm border border-primary text-primary rounded-lg font-label-md">
+        <span class="material-symbols-outlined text-[18px]">group</span>
+        View Assigned Clients<span id="viewDelegatePortfolioCount" class="font-label-sm"></span>
+      </button>
+    </div>
+
+    <p class="font-body-sm text-body-sm text-error hidden mt-sm" id="editDelegateError"></p>
+
+    <div class="flex gap-sm mt-md">
+      <button type="button" id="confirmEditDelegateBtn" class="flex-grow py-sm bg-primary text-on-primary rounded-lg font-label-md">Save Changes</button>
+      <button type="button" id="cancelEditDelegateBtn" class="px-md py-sm border border-outline-variant rounded-lg font-label-md">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reassign Delegate Modal — Regional-Manager-only. A focused, one-step
+     way to move a field delegate to another Delegate Manager straight
+     from the Delegates table, without opening the full Edit form. -->
+{% if is_regional_manager %}
+<div class="fixed inset-0 modal-overlay hidden items-center justify-center z-50 px-md" id="reassignDelegateModal">
+  <div class="bg-surface-container-lowest rounded-xl p-lg w-full max-w-[420px]">
+    <h2 class="font-headline-md text-headline-md mb-xs">Reassign Delegate</h2>
+    <p class="font-body-sm text-body-sm text-on-surface-variant mb-md" id="reassignDelegateSubtitle"></p>
+
+    <div class="space-y-xs">
+      <label class="font-label-md text-label-md text-on-surface-variant">Assign To (Manager)</label>
+      <select id="reassignDelegateManager" class="w-full p-sm rounded-lg border border-outline-variant outline-none focus:border-primary">
+        <option value="">—</option>
+      </select>
+      <p class="font-body-sm text-body-sm text-on-surface-variant">
+        The delegate re-inherits the new manager's brands and moves into that team's brand scope.
+      </p>
+    </div>
+
+    <p class="font-body-sm text-body-sm text-error hidden mt-sm" id="reassignDelegateError"></p>
+
+    <div class="flex gap-sm mt-md">
+      <button type="button" id="confirmReassignDelegateBtn" class="flex-grow py-sm bg-primary text-on-primary rounded-lg font-label-md">Reassign</button>
+      <button type="button" id="cancelReassignDelegateBtn" class="px-md py-sm border border-outline-variant rounded-lg font-label-md">Cancel</button>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Delegate Portfolio Modal — territory, brands, and every point of
+     contact across the clients this delegate owns. Shaped like the
+     manager's own reference roster spreadsheet. -->
+<div class="fixed inset-0 modal-overlay hidden items-center justify-center z-50 px-md" id="delegatePortfolioModal">
+  <div class="bg-surface-container-lowest rounded-xl w-full max-w-[820px] max-h-[92vh] flex flex-col">
+    <div class="p-lg pb-md border-b border-outline-variant flex items-start justify-between gap-md">
+      <div>
+        <h2 class="font-headline-md text-headline-md" id="portfolioDelegateName"></h2>
+        <p class="font-body-sm text-body-sm text-on-surface-variant" id="portfolioDelegateMeta"></p>
+      </div>
+      <div class="flex items-center gap-sm">
+        <button type="button" id="openAssignResponsibleClientsBtn" class="px-md py-2 border border-primary text-primary rounded-btn font-label-md flex items-center gap-1 whitespace-nowrap">
+          <span class="material-symbols-outlined text-[18px]">add_task</span>
+          Assign Responsible Clients
+        </button>
+        <button type="button" class="material-symbols-outlined text-on-surface-variant hover:text-primary" id="closePortfolioBtn">close</button>
+      </div>
+    </div>
+    <div class="p-lg overflow-y-auto flex-grow">
+      <div class="overflow-x-auto">
+        <table class="w-full text-body-sm">
+          <thead class="text-left border-b border-outline-variant bg-surface-container-low">
+            <tr>
+              <th class="py-2 px-sm font-label-md text-on-surface-variant">Point of Contact</th>
+              <th class="py-2 px-sm font-label-md text-on-surface-variant">Organization</th>
+              <th class="py-2 px-sm font-label-md text-on-surface-variant">Speciality</th>
+              <th class="py-2 px-sm font-label-md text-on-surface-variant">Class</th>
+              <th class="py-2 px-sm font-label-md text-on-surface-variant">Province</th>
+              <th class="py-2 px-sm font-label-md text-on-surface-variant">District</th>
+              <th class="py-2 px-sm font-label-md text-on-surface-variant">Phone</th>
+            </tr>
+          </thead>
+          <tbody id="portfolioTableBody"></tbody>
+        </table>
+        <p class="text-body-sm text-on-surface-variant text-center py-lg hidden" id="portfolioEmptyState">No clients assigned yet.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Assign Responsible Clients Modal — territory first, then a
+     filtered, multi-select client picker. Opened from the Delegate
+     Portfolio modal, for the delegate already loaded there. -->
+<div class="fixed inset-0 modal-overlay hidden items-center justify-center z-50 px-md" id="assignResponsibleClientsModal">
+  <div class="bg-surface-container-lowest rounded-xl w-full max-w-[680px] max-h-[92vh] flex flex-col">
+
+    <div class="p-lg pb-md border-b border-outline-variant flex items-start justify-between gap-md">
+      <div>
+        <h2 class="font-headline-md text-headline-md">Assign Responsible Clients</h2>
+        <p class="font-body-sm text-body-sm text-on-surface-variant" id="assignResponsibleClientsDelegateName"></p>
+      </div>
+      <button type="button" class="material-symbols-outlined text-on-surface-variant hover:text-primary" id="closeAssignResponsibleClientsBtn">close</button>
+    </div>
+
+    <div class="p-lg overflow-y-auto flex-grow space-y-md">
+      <div>
+        <p class="font-label-md text-label-md text-on-surface-variant mb-xs">1. Choose a territory</p>
+        <div class="flex gap-sm flex-wrap" id="assignResponsibleClientsTerritoryPicker"></div>
+        <p class="font-body-sm text-body-sm text-error hidden mt-sm" id="assignResponsibleClientsNoTerritory">
+          This delegate has no Primary or Secondary Territory set yet. Set one from Edit Delegate first.
+        </p>
+      </div>
+
+      <div id="assignResponsibleClientsClientSection" class="hidden border-t border-outline-variant pt-md">
+        <p class="font-label-md text-label-md text-on-surface-variant mb-xs">2. Pick clients</p>
+        <input id="assignResponsibleClientsSearch" type="text" placeholder="Search by organization name…"
+          class="w-full p-sm mb-sm rounded-lg border border-outline-variant outline-none focus:border-primary">
+        <div class="border border-outline-variant rounded-lg max-h-64 overflow-y-auto divide-y divide-outline-variant" id="assignResponsibleClientsList"></div>
+        <p class="font-body-sm text-body-sm text-on-surface-variant mt-xs" id="assignResponsibleClientsEmpty">No enabled clients in this territory.</p>
+      </div>
+
+      <div id="assignResponsibleClientsResult" class="hidden border-t border-outline-variant pt-md"></div>
+      <p class="font-body-sm text-body-sm text-error hidden" id="assignResponsibleClientsError"></p>
+    </div>
+
+    <div class="p-lg pt-md border-t border-outline-variant flex gap-sm justify-end">
+      <button type="button" class="px-md py-sm border border-outline-variant rounded-lg font-label-md" id="cancelAssignResponsibleClientsBtn">Close</button>
+      <button type="button" class="px-md py-sm bg-primary text-on-primary rounded-lg font-label-md" id="runAssignResponsibleClientsBtn">Assign Selected</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Confirm Action Modal — one shared dialog for every delete/archive
+     action in this app, opened via openConfirmModal() in managers.js.
+     Replaces ad-hoc browser confirm() popups with something styled
+     consistently and that can carry a longer explanation (why a
+     delete might be refused, what "archive" actually does, etc). -->
+<div class="fixed inset-0 modal-overlay hidden items-center justify-center z-50 px-md" id="confirmActionModal">
+  <div class="bg-surface-container-lowest rounded-xl w-full max-w-[440px] p-lg">
+    <h2 class="font-headline-md text-headline-md mb-sm" id="confirmActionTitle">Are you sure?</h2>
+    <p class="font-body-sm text-body-sm text-on-surface-variant" id="confirmActionMessage"></p>
+    <div class="flex gap-sm mt-md">
+      <button type="button" class="flex-grow py-sm bg-error text-on-error rounded-lg font-label-md" id="confirmActionConfirmBtn">Confirm</button>
+      <button type="button" class="px-md py-sm border border-outline-variant rounded-lg font-label-md" id="confirmActionCancelBtn">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="/assets/medvisitpro/js/common.js?v={{ asset_version }}"></script>
+<script src="/assets/medvisitpro/js/managers.js?v={{ asset_version }}"></script>
+
+{% include "medvisitpro/templates/includes/manager_bottom_nav.html" %}
+
+</body>
+</html>

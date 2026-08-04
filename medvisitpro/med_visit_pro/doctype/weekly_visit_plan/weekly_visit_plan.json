@@ -1,0 +1,113 @@
+{
+ "doctype": "DocType",
+ "name": "Weekly Visit Plan",
+ "module": "Med Visit Pro",
+ "custom": 0,
+ "istable": 0,
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "autoname": "format:WVP-{#####}",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "title_field": "delegate",
+ "fields": [
+  {
+   "fieldname": "delegate",
+   "fieldtype": "Link",
+   "label": "Delegate",
+   "options": "User",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "week_start_date",
+   "fieldtype": "Date",
+   "label": "Week Start Date (Monday)",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "description": "Normalised to the Monday of the chosen week. One plan per delegate per week."
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nPending Approval\nApproved\nPartially Approved\nRejected",
+   "default": "Draft",
+   "read_only": 1,
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "description": "Driven by the approval flow, never edited by hand. Partially Approved = the manager approved some lines and sent others back."
+  },
+  {
+   "fieldname": "submitted_on",
+   "fieldtype": "Datetime",
+   "label": "Submitted On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_lines",
+   "fieldtype": "Section Break",
+   "label": "Planned Visits"
+  },
+  {
+   "fieldname": "planned_visits",
+   "fieldtype": "Table",
+   "label": "Planned Visits",
+   "options": "Weekly Visit Plan Item"
+  },
+  {
+   "fieldname": "section_break_review",
+   "fieldtype": "Section Break",
+   "label": "Review"
+  },
+  {
+   "fieldname": "reviewed_by",
+   "fieldtype": "Link",
+   "label": "Reviewed By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "reviewed_on",
+   "fieldtype": "Datetime",
+   "label": "Reviewed On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "manager_comment",
+   "fieldtype": "Small Text",
+   "label": "Manager Comment",
+   "read_only": 1,
+   "description": "Plan-level note from the manager, shown to the delegate alongside any per-line comments."
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1, "write": 1, "create": 1, "delete": 1,
+   "report": 1, "export": 1, "print": 1, "email": 1
+  },
+  {
+   "role": "Delegate Manager",
+   "read": 1, "write": 1, "create": 1, "delete": 1,
+   "report": 1, "export": 1
+  },
+  {
+   "role": "Delegate",
+   "read": 1,
+   "report": 1
+  }
+ ]
+}

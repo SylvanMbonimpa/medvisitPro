@@ -1,0 +1,26 @@
+{
+ "doctype": "DocType",
+ "name": "Visit Product",
+ "module": "Med Visit Pro",
+ "custom": 0,
+ "istable": 1,
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "fields": [
+  {
+   "fieldname": "item",
+   "fieldtype": "Link",
+   "label": "Product",
+   "options": "Item",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks",
+   "in_list_view": 1
+  }
+ ],
+ "permissions": []
+}

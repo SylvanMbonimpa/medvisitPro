@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>MedvisitPro | Reports</title>
+<link rel="preload" href="/assets/medvisitpro/fonts/ibm-plex-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/medvisitpro/fonts/material-symbols-subset-2.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/medvisitpro/css/medvisitpro.css?v={{ asset_version }}">
+</head>
+<body class="text-on-surface">
+
+<script id="analytics-data" type="application/json">
+{{ analytics | tojson }}
+</script>
+<script id="trend-data" type="application/json">
+{{ trend | tojson }}
+</script>
+<script>
+  window.CSRF_TOKEN = "{{ csrf_token }}";
+  window.MANAGER_NAME = "{{ manager_name }}";
+  window.MANAGER_IMAGE = "{{ manager_image }}";
+  window.MANAGER_EMAIL = "{{ manager_email }}";
+</script>
+
+{% set active_nav = "reports" %}
+{% set nav_mode = "link" %}
+{# The whole shell — rail and content — is centred in one container,
+   so on a wide monitor the sidebar and body stay together as one panel
+   instead of the rail hugging the screen edge. #}
+<div class="mx-auto flex w-full max-w-container-app min-h-screen bg-surface">
+{% include "medvisitpro/templates/includes/manager_sidebar.html" %}
+
+<div class="flex flex-col flex-1 min-w-0">
+{% include "medvisitpro/templates/includes/manager_topbar.html" %}
+
+<main class="flex-1 pt-md pb-24 md:pb-lg px-margin-mobile md:px-margin-desktop">
+  <div class="space-y-lg">
+
+    <div class="flex flex-col md:flex-row md:items-end justify-between gap-md">
+      <div>
+        <h1 class="font-headline-lg text-headline-lg text-primary">Reports</h1>
+        <p class="font-body-sm text-body-sm text-on-surface-variant" id="dashboardSubtitle">Team performance</p>
+      </div>
+      <!-- Scopes every figure on this page. -->
+      <div class="flex items-center gap-sm flex-wrap">
+        <select id="analyticsMonth" aria-label="Month" class="bg-surface-container-lowest text-on-surface border border-outline-variant rounded-btn px-sm py-2 font-body-sm text-body-sm focus:outline-none focus:ring-2 focus:ring-primary"></select>
+        <select id="analyticsWeek" aria-label="Week" class="bg-surface-container-lowest text-on-surface border border-outline-variant rounded-btn px-sm py-2 font-body-sm text-body-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"></select>
+      </div>
+    </div>
+
+    <!-- Period-scoped figures. These follow the selectors in the header,
+         unlike the three cards above, which are always the current week. -->
+    <div class="grid grid-cols-2 lg:grid-cols-5 gap-gutter">
+      <div class="bg-surface-container-lowest p-md rounded-card border border-outline-variant ambient-shadow">
+        <p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">Total Visits</p>
+        <span class="font-headline-md text-headline-md text-on-surface" id="metricTotalVisits">0</span>
+      </div>
+      <div class="bg-surface-container-lowest p-md rounded-card border border-outline-variant ambient-shadow">
+        <p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">Order Value</p>
+        <span class="font-headline-md text-headline-md text-on-surface" id="metricOrderValue">0</span>
+      </div>
+      <div class="bg-surface-container-lowest p-md rounded-card border border-outline-variant ambient-shadow">
+        <p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">Ad-hoc Visits</p>
+        <span class="font-headline-md text-headline-md text-on-surface" id="metricAdhoc">0</span>
+      </div>
+      <div class="bg-surface-container-lowest p-md rounded-card border border-outline-variant ambient-shadow">
+        <p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">Avg Pharmacy</p>
+        <div class="flex items-baseline gap-xs">
+          <span class="font-headline-md text-headline-md text-on-surface" id="metricAvgPharmacy">0</span>
+          <span class="font-label-sm text-label-sm text-on-surface-variant">/client/wk</span>
+        </div>
+      </div>
+      <div class="bg-surface-container-lowest p-md rounded-card border border-outline-variant ambient-shadow">
+        <p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">Avg Clinic</p>
+        <div class="flex items-baseline gap-xs">
+          <span class="font-headline-md text-headline-md text-on-surface" id="metricAvgClinic">0</span>
+          <span class="font-label-sm text-label-sm text-on-surface-variant">/client/wk</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
+      <div class="lg:col-span-1">
+<div>
+        <section class="bg-surface-container-lowest rounded-card border border-outline-variant ambient-shadow h-full flex flex-col">
+          <div class="px-md py-sm border-b border-outline-variant">
+            <h4 class="font-headline-sm text-headline-sm text-primary">Visit trend</h4>
+            <p class="font-label-sm text-label-sm text-on-surface-variant">Logged visits, last 6 months</p>
+          </div>
+          <div class="flex-1 p-md flex flex-col">
+            <div class="flex-1 min-h-[140px] flex items-end justify-between gap-1.5" id="trendBars"></div>
+            <div class="flex justify-between mt-xs font-label-sm text-label-sm text-on-surface-variant" id="trendLabels"></div>
+
+            <div class="mt-md space-y-1 pt-sm border-t border-outline-variant">
+              <div class="flex items-center justify-between gap-sm">
+                <span class="font-label-sm text-label-sm text-on-surface-variant">Annual target</span>
+                <span class="font-label-lg text-label-lg text-on-surface" id="trendTarget">—</span>
+              </div>
+              <div class="flex items-center justify-between gap-sm">
+                <span class="font-label-sm text-label-sm text-on-surface-variant">Progress this year</span>
+                <span class="font-label-lg text-label-lg text-secondary" id="trendProgress">—</span>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+      </div>
+      <div class="lg:col-span-2">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-gutter">
+      <div class="bg-surface-container-lowest p-md rounded-card border border-outline-variant ambient-shadow">
+        <h3 id="topCustomersHeading" class="font-label-md text-label-md text-primary flex items-center gap-xs mb-md">
+          <span class="material-symbols-outlined text-[20px]">bar_chart</span>
+          MOST VISITED CLIENTS
+        </h3>
+        <div class="space-y-sm" id="topCustomersList"></div>
+      </div>
+      <div class="bg-surface-container-lowest p-md rounded-card border border-outline-variant ambient-shadow">
+        <h3 class="font-label-md text-label-md text-primary flex items-center gap-xs mb-md">
+          <span class="material-symbols-outlined text-[20px]">pie_chart</span>
+          CATEGORY REPORT
+        </h3>
+        <div class="flex items-center justify-between gap-lg h-full">
+          <div class="space-y-md flex-grow" id="categoryLegend"></div>
+          <div class="relative w-28 h-28 flex-shrink-0">
+            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36" id="categoryDonut"></svg>
+            <div class="absolute inset-0 flex items-center justify-center">
+              <span class="font-headline-md text-headline-md text-on-surface" id="categoryDonutTotal">0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+</div>
+</div>
+
+{% include "medvisitpro/templates/includes/manager_bottom_nav.html" %}
+
+<script src="/assets/medvisitpro/js/common.js?v={{ asset_version }}"></script>
+<script src="/assets/medvisitpro/js/report.js?v={{ asset_version }}"></script>
+</body>
+</html>
